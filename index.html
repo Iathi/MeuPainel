@@ -8,7 +8,7 @@
         body {
             font-family: Arial, sans-serif;
             background-color: #f0f0f0;
-            color: #333;
+            color: #000;
             text-align: center;
             padding: 50px;
         }
@@ -24,6 +24,27 @@
             color: #000;
             margin-top: 20px;
         }
+        .telegram-btn {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 10px 20px;
+            background-color: #000;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 20px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .telegram-btn:hover {
+            background-color: #000;
+        }
+        .telegram-btn img {
+            vertical-align: middle;
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
@@ -32,6 +53,11 @@
     <p>Nosso site estará de volta em breve. Aguarde enquanto preparamos tudo para você!</p>
 
     <div id="countdown">24:00:00</div>
+
+    <a href="http://t.me/Henr_M" target="_blank" class="telegram-btn">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram Logo">
+        Entre em Contato pelo Telegram
+    </a>
 
     <script>
         // Definindo o tempo inicial para o cronômetro (1 hora, por exemplo)
@@ -57,9 +83,6 @@
             }
         }, 1000);
     </script>
-    </form>
-    <div class="footer">Professor © 2024</div>
-</div>
 
 </body>
 </html>
