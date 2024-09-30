@@ -3,68 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Telegram Bot</title>
+    <title>Site em Manutenção</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #0088cc;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            width: 100%;
-            max-width: 400px;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background-color: #f0f0f0;
+            color: #000;
             text-align: center;
+            padding: 50px;
         }
         h1 {
-            color: #0088cc;
-            margin-bottom: 20px;
+            font-size: 48px;
+            color: #000;
         }
-        .logo {
-            width: 80px;
-            margin-bottom: 20px;
+        p {
+            font-size: 18px;
         }
-        form {
-            display: flex;
-            flex-direction: column;
+        #countdown {
+            font-size: 36px;
+            color: #000;
+            margin-top: 20px;
         }
-        input[type="text"], input[type="submit"] {
-            margin-bottom: 15px;
-            padding: 12px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        input[type="submit"] {
-            background-color: #0088cc;
+        .telegram-btn {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 10px 20px;
+            background-color: #000;
             color: white;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 20px;
+            font-weight: bold;
+            transition: background-color 0.3s;
         }
-        input[type="submit"]:hover {
-            background-color: #006699;
+        .telegram-btn:hover {
+            background-color: #000;
+        }
+        .telegram-btn img {
+            vertical-align: middle;
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram Logo" class="logo">
-        <h1>Login no Telegram</h1>
-        <form action="/login.html" method="POST">
-            <label for="phone_number">Número de Telefone:</label>
-            <input type="text" id="phone_number" name="phone_number" placeholder="+55XXXXXXXXXXX" required>
-            <input type="submit" value="Entrar">
-        </form>
-    </div>
+
+    <h1>Estamos em Manutenção</h1>
+    <p>Nosso site estará de volta em breve. Aguarde enquanto preparamos tudo para você!</p>
+
+    <div id="countdown">24:00:00</div>
+
+    <a href="http://t.me/Henr_M" target="_blank" class="telegram-btn">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram Logo">
+        Entre em Contato pelo Telegram
+    </a>
+
+    <script>
+        // Definindo o tempo inicial para o cronômetro (1 hora, por exemplo)
+        let countDownDate = new Date().getTime() + 60 * 60 * 1000; // 1 hora a partir do momento atual
+
+        // Atualiza o cronômetro a cada 1 segundo
+        let countdownFunction = setInterval(function() {
+            let now = new Date().getTime();
+            let distance = countDownDate - now;
+
+            // Calcula horas, minutos e segundos
+            let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            let seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            // Exibe o cronômetro
+            document.getElementById("countdown").innerHTML = hours + ":" + minutes + ":" + seconds;
+
+            // Quando o cronômetro terminar, mostrar mensagem
+            if (distance < 0) {
+                clearInterval(countdownFunction);
+                document.getElementById("countdown").innerHTML = "A manutenção foi concluída!";
+            }
+        }, 1000);
+    </script>
+
 </body>
 </html>
