@@ -1,1 +1,62 @@
-ok
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site em Manutenção</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            font-size: 48px;
+            color: #ff6f61;
+        }
+        p {
+            font-size: 18px;
+        }
+        #countdown {
+            font-size: 36px;
+            color: #ff6f61;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Estamos em Manutenção</h1>
+    <p>Nosso site estará de volta em breve. Aguarde enquanto preparamos tudo para você!</p>
+
+    <div id="countdown">24:00:00</div>
+
+    <script>
+        // Definindo o tempo inicial para o cronômetro (1 hora, por exemplo)
+        let countDownDate = new Date().getTime() + 60 * 60 * 1000; // 1 hora a partir do momento atual
+
+        // Atualiza o cronômetro a cada 1 segundo
+        let countdownFunction = setInterval(function() {
+            let now = new Date().getTime();
+            let distance = countDownDate - now;
+
+            // Calcula horas, minutos e segundos
+            let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            let seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            // Exibe o cronômetro
+            document.getElementById("countdown").innerHTML = hours + ":" + minutes + ":" + seconds;
+
+            // Quando o cronômetro terminar, mostrar mensagem
+            if (distance < 0) {
+                clearInterval(countdownFunction);
+                document.getElementById("countdown").innerHTML = "A manutenção foi concluída!";
+            }
+        }, 1000);
+    </script>
+
+</body>
+</html>
