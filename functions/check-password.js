@@ -2,7 +2,7 @@
 
 exports.handler = async (event, context) => {
     const users = {
-        'usuario1': 'senha1',
+        'admin': '9999',
         'usuario2': 'senha2',
     };
 
