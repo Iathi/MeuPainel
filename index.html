@@ -3,86 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Site em Manutenção</title>
+    <title>Login</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            color: #000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #E0E0E0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .login-container {
+            background-color: #1E1E1E;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            width: 350px;
             text-align: center;
-            padding: 50px;
         }
-        h1 {
-            font-size: 48px;
-            color: #000;
+
+        h2 {
+            margin-bottom: 20px;
+            color: #00BFFF;
         }
-        p {
-            font-size: 18px;
+
+        .form-group {
+            margin-bottom: 20px;
         }
-        #countdown {
-            font-size: 36px;
-            color: #000;
-            margin-top: 20px;
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #B0B0B0;
         }
-        .telegram-btn {
-            display: inline-block;
-            margin-top: 30px;
-            padding: 10px 20px;
-            background-color: #000;
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #444;
+            border-radius: 6px;
+            background-color: #2A2A2A;
+            color: #FFFFFF;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            border-color: #00BFFF;
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #00BFFF;
             color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 20px;
-            font-weight: bold;
-            transition: background-color 0.3s;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
         }
-        .telegram-btn:hover {
-            background-color: #000;
+
+        button:hover {
+            background-color: #0095E6;
         }
-        .telegram-btn img {
-            vertical-align: middle;
-            width: 24px;
-            height: 24px;
-            margin-right: 10px;
+
+        .error-message {
+            color: #FF4D4D;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #B0B0B0;
         }
     </style>
 </head>
 <body>
 
-    <h1>Estamos em Manutenção</h1>
-    <p>Nosso site estará de volta em breve. Aguarde enquanto preparamos tudo para você!</p>
+<div class="login-container">
+    <h2>Login</h2>
+    <form id="loginForm" method="POST" action="#">
+        <div class="form-group">
+            <label for="username">Nome de Usuário</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Senha</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit">Entrar</button>
+        <div class="error-message" id="error-message"></div>
+    </form>
+    <div class="footer">© 2024</div>
+</div>
 
-    <div id="countdown">24:00:00</div>
+<script>
+    document.getElementById('loginForm').onsubmit = async function(e) {
+        e.preventDefault(); // Previne o envio do formulário padrão
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
 
-    <a href="http://t.me/Henr_M" target="_blank" class="telegram-btn">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram Logo">
-        Entre em Contato pelo Telegram
-    </a>
+        if (username === "" || password === "") {
+            document.getElementById('error-message').innerText = "Por favor, preencha todos os campos.";
+            return;
+        }
 
-    <script>
-        // Definindo o tempo inicial para o cronômetro (1 hora, por exemplo)
-        let countDownDate = new Date().getTime() + 60 * 60 * 1000; // 1 hora a partir do momento atual
+        const response = await fetch('/.netlify/functions/check-password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password })
+        });
 
-        // Atualiza o cronômetro a cada 1 segundo
-        let countdownFunction = setInterval(function() {
-            let now = new Date().getTime();
-            let distance = countDownDate - now;
-
-            // Calcula horas, minutos e segundos
-            let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            let seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-            // Exibe o cronômetro
-            document.getElementById("countdown").innerHTML = hours + ":" + minutes + ":" + seconds;
-
-            // Quando o cronômetro terminar, mostrar mensagem
-            if (distance < 0) {
-                clearInterval(countdownFunction);
-                document.getElementById("countdown").innerHTML = "A manutenção foi concluída!";
-            }
-        }, 1000);
-    </script>
+        const data = await response.json();
+        if (data.success) {
+            // Redirecionar ou realizar outra ação em caso de sucesso
+            window.location.href = "/dashboard"; // Altere para o destino desejado
+        } else {
+            document.getElementById('error-message').innerText = "Usuário ou senha inválidos.";
+        }
+    };
+</script>
 
 </body>
 </html>
