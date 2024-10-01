@@ -1,122 +1,119 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-from telethon import TelegramClient
-from telethon.sessions import StringSession
-import os
-import asyncio
+﻿from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = 'seu_segredo_aqui'
+CORS(app)
+app.secret_key = 'sua_chave_secreta'  # Altere isso para algo seguro em produção
 
-api_id = '24010179'  # Substitua pelo seu API ID
-api_hash = '7ddc83d894b896975083f985effffe11'  # Substitua pelo seu API Hash
+# Usuários de exemplo com senha hash (substitua por um banco de dados em produção)
+users = {
+    "admin": generate_password_hash("9999")  # Exemplo de usuário e senha do administrador
+}
 
-client = None
-loop = asyncio.new_event_loop()
-sending = False  # Variável global para controlar o envio
-stop_sending_event = asyncio.Event()
+# Dicionário para armazenar as localizações dos entregadores
+deliverer_locations = {}
+# Lista para armazenar os pedidos
+deliveries = []
+# Lista para armazenar as mensagens do chat
+messages = []
 
-def ensure_sessions_dir():
-    if not os.path.exists('sessions'):
-        os.makedirs('sessions')
-
-async def async_start_client(phone_number):
-    global client
-    session_file = f'sessions/{phone_number}.session'
-    ensure_sessions_dir()
-    
-    if os.path.exists(session_file):
-        with open(session_file, 'r') as f:
-            session_string = f.read().strip()
-            client = TelegramClient(StringSession(session_string), api_id, api_hash)
-    else:
-        client = TelegramClient(StringSession(), api_id, api_hash)
-        await client.connect()
-        if not await client.is_user_authorized():
-            await client.start(phone=phone_number)
-            session_string = client.session.save()
-            with open(session_file, 'w') as f:
-                f.write(session_string)
-
-    await client.connect()
-
-def start_client(phone_number):
-    loop.run_until_complete(async_start_client(phone_number))
+@app.route('/')
+def home():
+    return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        phone_number = request.form['phone_number']
-        session['phone_number'] = phone_number
-        start_client(phone_number)
-        return redirect(url_for('index'))
+        username = request.form['username']
+        password = request.form['password']
+
+        # Verifica se o usuário e senha estão corretos
+        if username in users and check_password_hash(users[username], password):
+            flash('Login bem-sucedido!', 'success')
+            session['username'] = username  # Armazena o nome do usuário na sessão
+            return redirect(url_for('index'))  # Redireciona para a página inicial após o login
+        else:
+            flash('Usuário ou senha incorretos. Tente novamente.', 'danger')
+
     return render_template('login.html')
 
-@app.route('/')
+@app.route('/index')
 def index():
-    if 'phone_number' not in session:
+    return render_template('index.html', deliveries=deliveries)  # Passa a lista de pedidos para o template
+
+@app.route('/pedidos')
+def pedidos():
+    return render_template('pedidos.html')  # Renderiza a página de pedidos
+
+@app.route('/add_user', methods=['GET', 'POST'])
+def add_user():
+    if 'username' in session and session['username'] == 'admin':  # Apenas o admin pode adicionar usuários
+        if request.method == 'POST':
+            new_username = request.form['username']
+            new_password = request.form['password']
+            if new_username in users:
+                flash('Usuário já existe!', 'danger')
+            else:
+                # Gera o hash da senha e adiciona o novo usuário
+                users[new_username] = generate_password_hash(new_password)
+                flash(f'Usuário {new_username} adicionado com sucesso!', 'success')
+            return redirect(url_for('add_user'))
+        return render_template('add_user.html')  # Exibe o formulário
+    else:
+        flash('Acesso negado! Somente administradores podem adicionar usuários.', 'danger')
         return redirect(url_for('login'))
 
-    phone_number = session.get('phone_number')
-
-    if client is None or not client.is_connected():
-        start_client(phone_number)
-
+@app.route('/api/update_location', methods=['POST'])
+def update_location():
+    data = request.json
+    deliverer_id = data.get('id')
     try:
-        dialogs = loop.run_until_complete(client.get_dialogs())
-        groups = [(dialog.id, dialog.name) for dialog in dialogs if dialog.is_group]
+        latitude = float(data.get('lat'))
+        longitude = float(data.get('lng'))
+    except (TypeError, ValueError):
+        return jsonify(success=False, message="Coordenadas inválidas")
 
-        return render_template('index.html', groups=groups)
+    if deliverer_id and latitude and longitude:
+        deliverer_locations[deliverer_id] = {'lat': latitude, 'lng': longitude}
+        return jsonify(success=True)
+    return jsonify(success=False, message="Dados inválidos")
 
-    except Exception as e:
-        print(f"Erro ao tentar listar os grupos: {str(e)}")
-        return render_template('index.html', groups=[])
+@app.route('/api/get_all_deliverer_locations', methods=['GET'])
+def get_all_deliverer_locations():
+    return jsonify(deliverer_locations)
 
-@app.route('/send_messages', methods=['POST'])
-def send_messages():
-    global sending, stop_sending_event
-    group_ids = request.form.getlist('groups')
-    total_messages = int(request.form['total_messages'])
-    delay = float(request.form['delay'])
-    message = request.form['message']
+@app.route('/api/get_deliveries', methods=['GET'])
+def get_deliveries():
+    return jsonify(deliveries)
 
-    session['status'] = {'sending': [], 'errors': []}
-    sending = True
-    stop_sending_event.clear()
+@app.route('/api/accept_delivery/<int:delivery_id>', methods=['POST'])
+def accept_delivery(delivery_id):
+    # Simulação de aceitação de entrega
+    return jsonify(success=True)
 
-    async def send_messages_task():
-        global sending
-        for group_id in group_ids:
-            if not sending:
-                break
-            try:
-                for _ in range(total_messages):
-                    if not sending:
-                        break
-                    await client.send_message(int(group_id), message)
-                    session['status']['sending'].append(f"✅ Mensagem enviada para o grupo {group_id}")
-                    await asyncio.sleep(delay)
-            except Exception as e:
-                session['status']['errors'].append(f"❌ Erro ao enviar mensagem para o grupo {group_id}: {str(e)}")
+@app.route('/api/create_delivery', methods=['POST'])
+def create_delivery():
+    data = request.json
+    address = data.get('address')
+    quantity = data.get('quantity')
 
-        sending = False
-        stop_sending_event.set()
+    if address and isinstance(quantity, int) and quantity > 0:
+        # Adiciona o novo pedido à lista
+        deliveries.append({'address': address, 'quantity': quantity})
+        return jsonify(success=True)
+    return jsonify(success=False, message="Dados inválidos")
 
-    loop.run_until_complete(send_messages_task())
-    return jsonify(session['status'])
+@app.route('/api/send_message', methods=['POST'])
+def send_message():
+    data = request.get_json()
+    message = {'sender': session.get('username', 'Usuário'), 'content': data['message']}
+    messages.append(message)
+    return jsonify({'status': 'Mensagem enviada'}), 200
 
-@app.route('/status_updates')
-def status_updates():
-    if 'status' in session:
-        return jsonify(session['status'])
-    return jsonify({'sending': [], 'errors': []})
-
-@app.route('/stop_sending', methods=['POST'])
-def stop_sending():
-    global sending
-    sending = False
-    stop_sending_event.set()
-    # Retornar status atualizado
-    return jsonify(session.get('status', {'sending': [], 'errors': []}))
+@app.route('/api/get_messages', methods=['GET'])
+def get_messages():
+    return jsonify({'messages': messages}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
