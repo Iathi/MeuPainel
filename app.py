@@ -1,10 +1,13 @@
-﻿from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+import os
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 CORS(app)
-app.secret_key = 'sua_chave_secreta'  # Altere isso para algo seguro em produção
+
+# Use uma chave secreta segura usando variáveis de ambiente
+app.secret_key = os.getenv('SECRET_KEY', 'sua_chave_secreta')
 
 # Usuários de exemplo com senha hash (substitua por um banco de dados em produção)
 users = {
@@ -40,10 +43,16 @@ def login():
 
 @app.route('/index')
 def index():
+    if 'username' not in session:
+        flash('Faça login para continuar.', 'warning')
+        return redirect(url_for('login'))
     return render_template('index.html', deliveries=deliveries)  # Passa a lista de pedidos para o template
 
 @app.route('/pedidos')
 def pedidos():
+    if 'username' not in session:
+        flash('Faça login para continuar.', 'warning')
+        return redirect(url_for('login'))
     return render_template('pedidos.html')  # Renderiza a página de pedidos
 
 @app.route('/add_user', methods=['GET', 'POST'])
@@ -106,8 +115,15 @@ def create_delivery():
 
 @app.route('/api/send_message', methods=['POST'])
 def send_message():
+    if 'username' not in session:
+        return jsonify({'status': 'Usuário não autenticado'}), 403
+
     data = request.get_json()
-    message = {'sender': session.get('username', 'Usuário'), 'content': data['message']}
+    message = {'sender': session.get('username', 'Usuário'), 'content': data.get('message', '')}
+
+    if not message['content']:
+        return jsonify({'status': 'Mensagem vazia'}), 400
+    
     messages.append(message)
     return jsonify({'status': 'Mensagem enviada'}), 200
 
@@ -116,4 +132,4 @@ def get_messages():
     return jsonify({'messages': messages}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
