@@ -1,2 +1,7 @@
 [build]
-  command = "pip install -r requirements.txt && python app.py"
+  command = "pip install -r requirements.txt && gunicorn app:app"
+  publish = "dist"
+
+[dev]
+  command = "flask run"
+  framework = "#custom"
