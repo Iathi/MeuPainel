@@ -2,10 +2,10 @@
 FROM python:3.9
 
 # Defina o diretório de trabalho dentro do contêiner
-WORKDIR /app
+WORKDIR /
 
 # Copie os arquivos de dependências para o contêiner
-COPY requirements.txt /app/
+COPY requirements.txt /
 
 # Crie e ative o ambiente virtual e instale as dependências
 RUN python -m venv /opt/venv && \
@@ -13,7 +13,7 @@ RUN python -m venv /opt/venv && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copie o restante da aplicação para o contêiner
-COPY . /app/
+COPY . /
 
 # Exponha a porta em que o app Flask ou Quart estará rodando
 EXPOSE 5000
