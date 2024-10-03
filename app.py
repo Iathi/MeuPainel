@@ -1,95 +1,56 @@
+from telegram import Bot
+from telegram.error import TelegramError
+import asyncio
 import os
-from telethon.sync import TelegramClient
-from telethon import utils
-import csv
-import time
 
-# Configurações da API do Telegram
-api_id = os.getenv('API_ID')  # Pegue o API_ID da variável de ambiente
-api_hash = os.getenv('API_HASH')  # Pegue o API_HASH da variável de ambiente
+# Token do bot
+TOKEN = '6859463280:AAGthI7TXdRdVJIp9U-cOvgF0EcC6AITdeM'
+bot = Bot(token=TOKEN)
 
-# Ler números de telefone do arquivo CSV
-def read_phone_numbers(filename):
-    with open(filename, 'r') as f:
-        return [row[0] for row in csv.reader(f)]
+# Configurações automáticas
+CHAT_ID = '@VendaemAlta'  # Nome de usuário do grupo/canal
+MESSAGE = """🔥 ATENÇÃO 🔥
+🔥 ATENÇÃO 🔥
+Lucros de R$ 17,29
+Faca um Teste 
+https://paineltelegram.netlify.app/
 
-# Função principal para executar o script
-def main():
-    phone_numbers = read_phone_numbers('phone.csv')
+https://t.me/Dinheir0Gratis
+Ganhe 65% de Comissão com o BotPro Anúncios & LEDs! Participe do nosso programa de afiliados e ganhe 65% de comissão ao promover o BotPro Anúncios & LEDs. Este produto revolucionário automatiza campanhas publicitárias e controla LEDs com eficiência e facilidade. Ofereça aos seus seguidores uma solução inovadora para otimizar anúncios e projetos com LEDs e aproveite uma alta comissão sobre cada venda gerada. Não perca a chance de aumentar seus ganhos com um produto que realmente faz a diferença!"""
+PHOTO_PATH = 'grupos.jpg'
+NUM_TIMES = 2000  # Quantas vezes enviar a mensagem e a foto
+MESSAGE_INTERVAL = 20  # Intervalo em segundos entre cada envio de mensagem
+PHOTO_INTERVAL = 20  # Intervalo em segundos entre cada envio de foto
 
-    # Pega o índice do número de telefone de uma variável de ambiente
-    phone_index = int(os.getenv('PHONE_INDEX', 0))  # Defina o índice padrão como 0 se não estiver definido
-    if not (0 <= phone_index < len(phone_numbers)):
-        print("Número inválido.")
-        return
-
-    phone = utils.parse_phone(phone_numbers[phone_index])
-    print(f"\nVocê escolheu o número: {phone}")
-
-    # Criar cliente Telegram
-    client = TelegramClient(f"sessions/{phone}", api_id, api_hash)
-
+# Função para enviar texto e imagem
+async def send_text_and_photo(chat_id, message, photo_path, num_times, message_interval, photo_interval):
     try:
-        client.start(phone)
-        print(f"✅ Login bem-sucedido para: {phone}")
+        for i in range(num_times):
+            # Enviar a mensagem
+            await bot.send_message(chat_id=chat_id, text=message)
+            print(f"Mensagem {i + 1} enviada com sucesso!")
+            await asyncio.sleep(message_interval)
+
+            # Verificar se o arquivo existe e é um JPG
+            if os.path.isfile(photo_path) and photo_path.lower().endswith(('.jpg', '.jpeg')):
+                try:
+                    with open(photo_path, 'rb') as photo:
+                        await bot.send_photo(chat_id=chat_id, photo=photo)
+                        print(f"Foto {i + 1} enviada com sucesso!")
+                except FileNotFoundError:
+                    print(f"Arquivo de imagem não encontrado no caminho: {photo_path}")
+                except Exception as e:
+                    print(f"Erro ao enviar a foto: {e}")
+            else:
+                print(f"O aí as e:
+        print(f"Erro ao enviar mensagem ou foto: {e}")
     except Exception as e:
-        print(f"❌ Erro ao iniciar sessão para {phone}: {e}")
-        return
+        print(f"Erro inesperado: {e}")
 
-    # Coletar e listar apenas grupos com permissão para enviar mensagens
-    print(f"\n🔍 Coletando grupos com permissão para enviar mensagens para {phone}...")
-    groups = []
-    for dialog in client.iter_dialogs():
-        if dialog.is_group:
-            group_id = dialog.entity.id
-            group_name = dialog.name
-            groups.append((group_name, group_id))
-            print(f'🌟 Grupo: {group_name} (ID: {group_id})')
+# Função principal
+async def main():
+    # Enviar a mensagem e a foto o número especificado de vezes
+    await send_text_and_photo(CHAT_ID, MESSAGE, PHOTO_PATH, NUM_TIMES, MESSAGE_INTERVAL, PHOTO_INTERVAL)
 
-    if not groups:
-        print("🚫 Nenhum grupo com permissão encontrado.")
-        client.disconnect()
-        return
-
-    # Seleção de múltiplos grupos de destino via variável de ambiente
-    selected_indices = os.getenv('GROUP_INDICES', '0').split(',')
-    selected_groups = [groups[int(idx.strip())] for idx in selected_indices if idx.isdigit() and 0 <= int(idx) < len(groups)]
-    if not selected_groups:
-        print("Nenhum grupo selecionado ou seleção inválida.")
-        client.disconnect()
-        return
-
-    print(f"\nVocê escolheu os seguintes grupos:")
-    for group_name, group_id in selected_groups:
-        print(f"📍 {group_name} (ID: {group_id})")
-
-    # Configurações de envio de mensagens
-    total_messages = int(os.getenv('TOTAL_MESSAGES', 10))
-    delay = float(os.getenv('MESSAGE_DELAY', 5.0))
-
-    # Mensagem a ser enviada
-    message = os.getenv('MESSAGE', "Mensagem padrão de parceria.")
-
-    # Envio das mensagens
-    num_groups = len(selected_groups)
-    messages_sent = 0
-    group_index = 0
-
-    while messages_sent < total_messages:
-        group_name, group_id = selected_groups[group_index]
-        try:
-            client.send_message(group_id, message)
-            messages_sent += 1
-            print(f"✉️ Mensagem enviada para {group_name}. Total enviado: {messages_sent}/{total_messages}")
-            time.sleep(delay)  # Espera pelo intervalo especificado
-        except Exception as e:
-            print(f"❌ Erro ao enviar mensagem para {group_name}: {e}")
-
-        # Alterna para o próximo grupo
-        group_index = (group_index + 1) % num_groups
-
-    client.disconnect()
-    print("🔌 Desconectado.")
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    asyncio.run(main())
