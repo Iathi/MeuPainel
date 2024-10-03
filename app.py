@@ -1,46 +1,24 @@
-import csv
-import time
 import os
-import asyncio
 from telethon.sync import TelegramClient
 from telethon import utils
+import csv
+import time
 
 # Configurações da API do Telegram
-api_id = 24010179  # Substitua com o seu API ID
-api_hash = '7ddc83d894b896975083f985effffe11'  # Substitua com o seu API Hash
-
-# Função para verificar permissão de envio de mensagens
-async def check_message_permission(client, group_id):
-    try:
-        # Verifica se o grupo é acessível sem enviar mensagem
-        await client.get_entity(group_id)
-        return True
-    except Exception:
-        return False
+api_id = os.getenv('API_ID')  # Pegue o API_ID da variável de ambiente
+api_hash = os.getenv('API_HASH')  # Pegue o API_HASH da variável de ambiente
 
 # Ler números de telefone do arquivo CSV
 def read_phone_numbers(filename):
-    if not os.path.exists(filename):
-        print(f"Arquivo {filename} não encontrado.")
-        return []
-    
     with open(filename, 'r') as f:
         return [row[0] for row in csv.reader(f)]
 
 # Função principal para executar o script
-async def main():
+def main():
     phone_numbers = read_phone_numbers('phone.csv')
 
-    if not phone_numbers:
-        print("Nenhum número de telefone disponível.")
-        return
-
-    # Seleção do número de telefone
-    print("📋 Números de telefone disponíveis:")
-    for idx, phone in enumerate(phone_numbers):
-        print(f"{idx + 1}: {phone}")
-
-    phone_index = int(input("\nEscolha o número de telefone (número): ")) - 1
+    # Pega o índice do número de telefone de uma variável de ambiente
+    phone_index = int(os.getenv('PHONE_INDEX', 0))  # Defina o índice padrão como 0 se não estiver definido
     if not (0 <= phone_index < len(phone_numbers)):
         print("Número inválido.")
         return
@@ -52,7 +30,7 @@ async def main():
     client = TelegramClient(f"sessions/{phone}", api_id, api_hash)
 
     try:
-        await client.start(phone)
+        client.start(phone)
         print(f"✅ Login bem-sucedido para: {phone}")
     except Exception as e:
         print(f"❌ Erro ao iniciar sessão para {phone}: {e}")
@@ -61,31 +39,24 @@ async def main():
     # Coletar e listar apenas grupos com permissão para enviar mensagens
     print(f"\n🔍 Coletando grupos com permissão para enviar mensagens para {phone}...")
     groups = []
-    async for dialog in client.iter_dialogs():
+    for dialog in client.iter_dialogs():
         if dialog.is_group:
             group_id = dialog.entity.id
             group_name = dialog.name
-            if await check_message_permission(client, group_id):
-                groups.append((group_name, group_id))
-                print(f'🌟 Grupo: {group_name} (ID: {group_id}) - Permissão: Pode enviar mensagens')
+            groups.append((group_name, group_id))
+            print(f'🌟 Grupo: {group_name} (ID: {group_id})')
 
     if not groups:
         print("🚫 Nenhum grupo com permissão encontrado.")
-        await client.disconnect()
+        client.disconnect()
         return
 
-    # Seleção de múltiplos grupos de destino
-    print("\nEscolha os grupos para enviar a mensagem (separe os números por vírgula):")
-    for idx, (group_name, group_id) in enumerate(groups):
-        print(f"{idx + 1}: {group_name} (ID: {group_id})")
-
-    selected_indices = input("\nEscolha os grupos (números separados por vírgula): ")
-    selected_indices = [int(idx.strip()) - 1 for idx in selected_indices.split(',')]
-
-    selected_groups = [groups[idx] for idx in selected_indices if 0 <= idx < len(groups)]
+    # Seleção de múltiplos grupos de destino via variável de ambiente
+    selected_indices = os.getenv('GROUP_INDICES', '0').split(',')
+    selected_groups = [groups[int(idx.strip())] for idx in selected_indices if idx.isdigit() and 0 <= int(idx) < len(groups)]
     if not selected_groups:
         print("Nenhum grupo selecionado ou seleção inválida.")
-        await client.disconnect()
+        client.disconnect()
         return
 
     print(f"\nVocê escolheu os seguintes grupos:")
@@ -93,19 +64,11 @@ async def main():
         print(f"📍 {group_name} (ID: {group_id})")
 
     # Configurações de envio de mensagens
-    total_messages = int(input("Digite o número total de mensagens a serem enviadas: "))
-    delay = float(input("Digite o intervalo entre mensagens (em segundos): "))
+    total_messages = int(os.getenv('TOTAL_MESSAGES', 10))
+    delay = float(os.getenv('MESSAGE_DELAY', 5.0))
 
     # Mensagem a ser enviada
-    message = (
-        "🔥 ATENÇÃO 🔥\n\n"
-        "Estamos buscando parcerias! Se você está interessado em colaborar e explorar novas oportunidades, esta é a sua chance!\n\n"
-        "- Construa parcerias com uma equipe inovadora! 🚀\n"
-        "- Desenvolva projetos em um ambiente dinâmico! 💡\n"
-        "- Aumente suas oportunidades de crescimento! 📈\n\n"
-        "Para mais detalhes e parcerias, entre em contato: https://t.me/Dinheir0Gratis\n\n"
-        "Vamos crescer juntos! 🤝"
-    )
+    message = os.getenv('MESSAGE', "Mensagem padrão de parceria.")
 
     # Envio das mensagens
     num_groups = len(selected_groups)
@@ -115,18 +78,18 @@ async def main():
     while messages_sent < total_messages:
         group_name, group_id = selected_groups[group_index]
         try:
-            await client.send_message(group_id, message)
+            client.send_message(group_id, message)
             messages_sent += 1
             print(f"✉️ Mensagem enviada para {group_name}. Total enviado: {messages_sent}/{total_messages}")
-            await asyncio.sleep(delay)  # Espera pelo intervalo especificado
+            time.sleep(delay)  # Espera pelo intervalo especificado
         except Exception as e:
             print(f"❌ Erro ao enviar mensagem para {group_name}: {e}")
 
         # Alterna para o próximo grupo
         group_index = (group_index + 1) % num_groups
 
-    await client.disconnect()
-    print("🔌 Desconectado.") 
+    client.disconnect()
+    print("🔌 Desconectado.")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
