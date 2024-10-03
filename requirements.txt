@@ -1,4 +1,5 @@
-
+telethon
+python-telegram-bot
 Flask==2.0.1
 Flask-Cors==3.0.10
 Werkzeug==0.16.1  # Se estiver usando versões anteriores para evitar conflitos
