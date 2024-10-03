@@ -1,13 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-from flask_cors import CORS  # Importar CORS
+from flask_cors import CORS
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 import os
 import asyncio
 
 app = Flask(__name__)
-CORS(app)  # Ativar CORS para todas as rotas
-
+CORS(app)  # Adicionando suporte a CORS
 app.secret_key = 'seu_segredo_aqui'
 
 api_id = '24010179'  # Substitua pelo seu API ID
@@ -107,4 +106,4 @@ def status_updates():
     return jsonify([])
 
 if __name__ == '__main__':
-    app.run(debug=False)  # Desativar debug em produção
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
