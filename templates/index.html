@@ -1,239 +1,170 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soluções para Telegram</title>
+    <title>Painel de Envio de Mensagens</title>
     <style>
         body {
-            font-family: 'Roboto', sans-serif;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
             margin: 0;
             padding: 0;
-            background-color: #f0f2f5;
-            color: #333;
         }
-
-        header {
-            background: linear-gradient(135deg, #000, #000);
+        .header {
+            background-color: #0088cc;
+            padding: 20px;
+            text-align: center;
             color: white;
-            padding: 60px 0;
-            text-align: center;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            position: relative;
         }
-
-        header img {
-            width: 150px;
-            margin-bottom: 20px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        .header img {
+            width: 50px;
+            vertical-align: middle;
         }
-
-        header img:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        h1 {
-            margin: 0;
-            font-size: 42px;
-            letter-spacing: 2px;
-        }
-
-        header p {
-            font-size: 18px;
-            margin-top: 10px;
-        }
-
-        .container {
-            width: 90%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 0;
-        }
-
-        .section {
-            background-color: white;
-            margin-bottom: 40px;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
-            display: flex;
-            align-items: center;
-            transition: transform 0.3s ease;
-        }
-
-        .section:hover {
-            transform: translateY(-5px);
-        }
-
-        .section img {
-            max-width: 350px;
-            border-radius: 12px;
-            margin-right: 30px;
-            flex-shrink: 0;
-        }
-
-        h2 {
-            color: #000;
-            font-size: 28px;
-            margin-bottom: 20px;
-        }
-
-        p {
-            font-size: 18px;
-            line-height: 1.7;
-        }
-
-        .features h3 {
-            font-size: 24px;
-            margin-top: 20px;
-            color: #333;
-        }
-
-        .features ul {
-            list-style-type: none;
-            padding: 0;
-        }
-
-        .features ul li {
-            margin-bottom: 10px;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-        }
-
-        .features ul li:before {
-            content: '✔';
-            color: #007aff;
-            font-weight: bold;
-            margin-right: 10px;
-        }
-
-        .contact {
-            text-align: center;
-            margin: 40px 0;
-        }
-
-        .contact h2 {
-            font-size: 32px;
-            color: #333;
-        }
-
-        .contact p {
-            font-size: 18px;
-            margin: 10px 0;
-        }
-
-        .button, .button-telegram {
+        .header h1 {
             display: inline-block;
-            background-color: #000;
-            color: white;
-            padding: 12px 30px;
-            border-radius: 30px;
-            text-decoration: none;
-            font-size: 18px;
-            margin-top: 20px;
-            transition: background-color 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .button:hover, .button-telegram:hover {
-            background-color: #000;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .button-telegram {
-            background-color: #000;
-        }
-
-        footer {
-            background-color: #000;
-            color: white;
-            text-align: center;
-            padding: 20px 0;
-            font-size: 16px;
-        }
-
-        footer p {
             margin: 0;
+            font-size: 24px;
+            vertical-align: middle;
         }
-
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        select, textarea, input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #0088cc;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #006699;
+        }
+        .status-container {
+            margin-top: 40px;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        #status-updates {
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: #fff;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .status-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        .status-item span {
+            font-size: 14px;
+            color: #333;
+        }
         @media (max-width: 768px) {
-            .section {
-                flex-direction: column;
-                text-align: center;
+            .container {
+                padding: 15px;
             }
-
-            .section img {
-                margin-bottom: 20px;
-                margin-right: 0;
-            }
-
-            h1 {
-                font-size: 36px;
+            .header h1 {
+                font-size: 20px;
             }
         }
     </style>
 </head>
 <body>
-
-<header>
-    <img src="Logo2.jpg" alt="Logo">
-    <h1>Soluções Avançadas para Telegram</h1>
-    <p>Automatize, expanda e gerencie seus grupos com eficiência!</p>
-</header>
-
-<div class="container">
-    <div class="section">
-        <h2>Painel de Mensagem em Massa</h2>
-        <p>Envie mensagens em massa para milhares de usuários e grupos de forma automática e eficiente. Nosso painel oferece uma interface intuitiva e recursos avançados para otimizar suas campanhas de comunicação no Telegram.</p>
-        <div class="features">
-            <h3>Recursos principais:</h3>
-            <ul>
-                <li>Envio de mensagens para milhares de usuários.</li>
-                <li>Monitoramento em tempo real.</li>
-                <li>Agendamento de campanhas.</li>
-                <li>Suporte a mídias e links.</li>
-            </ul>
-            <a href="http://t.me/Henr_M" target="_blank" class="button-telegram">Entre em Contato pelo Telegram</a>
-        </div>
+    <div class="header">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram Logo">
+        <h1>Painel de Envio de Mensagens</h1>
     </div>
-
-    <div class="section">
-        <div>
-            <h2>Painel de Adicionar Membros</h2>
-            <p>Aumente a quantidade de membros no seu grupo de forma automatizada. Nosso sistema permite adicionar milhares de membros reais ao seu grupo de forma prática e rápida.</p>
-            <div class="features">
-                <h3>Recursos principais:</h3>
-                <ul>
-                    <li>Adição de milhares de membros reais.</li>
-                    <li>Gerenciamento de múltiplos grupos.</li>
-                    <li>Segmentação de membros por interesses.</li>
-                </ul>
-                <a href="http://t.me/Henr_M" target="_blank" class="button-telegram">Entre em Contato pelo Telegram</a>
+    <div class="container">
+        <form action="{{ url_for('send_messages') }}" method="POST">
+            <div class="form-group">
+                <label for="groups">Selecione os Grupos:</label>
+                <select name="groups" multiple>
+                    {% for group_id, group_name in groups %}
+                        <option value="{{ group_id }}">{{ group_name }}</option>
+                    {% endfor %}
+                </select>
             </div>
-        </div>
-    </div>
-
-    <div class="section">
-        <div>
-            <h2>Extração de Membros de Grupos</h2>
-            <p>Extraia membros de grupos do Telegram para o seu próprio. Capture listas de usuários de grupos relevantes e expanda seu público com membros engajados.</p>
-            <div class="features">
-                <h3>Recursos principais:</h3>
-                <ul>
-                    <li>Extração de milhares de membros.</li>
-                    <li>Filtragem de membros mais ativos.</li>
-                    <li>Exportação de listas para campanhas.</li>
-                </ul>
-                <a href="http://t.me/Henr_M" target="_blank" class="button-telegram">Entre em Contato pelo Telegram</a>
+            <div class="form-group">
+                <label for="message">Mensagem:</label>
+                <textarea name="message" rows="4" required></textarea>
             </div>
+            <div class="form-group">
+                <label for="total_messages">Quantidade de Mensagens:</label>
+                <input type="number" name="total_messages" min="1" value="1" required>
+            </div>
+            <div class="form-group">
+                <label for="delay">Delay entre Mensagens (em segundos):</label>
+                <input type="number" name="delay" min="1" value="5" required>
+            </div>
+            <button type="submit">Enviar Mensagens</button>
+        </form>
+    </div>
+
+    <!-- Status do envio -->
+    <div class="container status-container">
+        <h2>Status do Envio</h2>
+        <div id="status-updates">
+            <p>Nenhuma mensagem enviada ainda.</p>
         </div>
     </div>
-</div>
 
-<footer>
-    <p>&copy; 2024 - Soluções para Telegram. Todos os direitos reservados.</p>
-</footer>
+    <script>
+        function fetchStatusUpdates() {
+            fetch('/status_updates')
+                .then(response => response.json())
+                .then(data => {
+                    const statusContainer = document.getElementById('status-updates');
+                    statusContainer.innerHTML = '';
+                    if (data.length > 0) {
+                        data.forEach((msg) => {
+                            const statusItem = document.createElement('div');
+                            statusItem.classList.add('status-item');
+                            statusItem.innerHTML = `<span>${msg}</span>`;
+                            statusContainer.appendChild(statusItem);
+                        });
+                    } else {
+                        statusContainer.innerHTML = '<p>Nenhuma mensagem enviada ainda.</p>';
+                    }
+                });
+        }
 
+        // Atualiza o status a cada 3 segundos
+        setInterval(fetchStatusUpdates, 3000);
+    </script>
 </body>
-                  </html>
+</html>
