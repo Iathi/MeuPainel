@@ -1,7 +1,3 @@
 [build]
-  command = "pip install -r requirements.txt && gunicorn app:app"
-  publish = "dist"
-
-[dev]
-  command = "flask run"
-  framework = "#custom"
+  command = "npm run build"  # Se você estiver usando um framework frontend
+  publish = "dist"  # O diretório que contém os arquivos construídos
