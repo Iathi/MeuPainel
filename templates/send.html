@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enviar Mensagens</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Configuração de Envio de Mensagens</h1>
+        
+        <form id="send-form">
+            <div>
+                <label for="message">Mensagem a ser enviada:</label>
+                <textarea id="message" name="message" rows="5" placeholder="Digite aqui a mensagem que deseja enviar..."></textarea>
+            </div>
+
+            <div>
+                <label for="delay">Intervalo entre mensagens (em segundos):</label>
+                <input type="number" id="delay" name="delay" min="1" value="5">
+            </div>
+
+            <div>
+                <label for="total_messages">Total de mensagens a enviar:</label>
+                <input type="number" id="total_messages" name="total_messages" min="1" value="10">
+            </div>
+
+            <div>
+                <label for="groups">Selecione os grupos:</label>
+                <select id="groups" name="groups[]" multiple>
+                    <!-- Options serão geradas dinamicamente pelo servidor -->
+                    <!-- Exemplo: -->
+                    <option value="123456789">Grupo 1</option>
+                    <option value="987654321">Grupo 2</option>
+                </select>
+            </div>
+
+            <button type="submit">Enviar Mensagens</button>
+        </form>
+        
+        <div id="status">
+            <h2>Status de Envio</h2>
+            <ul id="status-list">
+                <!-- Status das mensagens enviadas serão listados aqui -->
+            </ul>
+        </div>
+    </div>
+
+    <script src="/static/js/send.js"></script>
+</body>
+</html>
