@@ -1,58 +1,107 @@
-from telegram import Bot
-import asyncio
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from telethon import TelegramClient
+from telethon.sessions import StringSession
 import os
-from concurrent.futures import ThreadPoolExecutor
+import asyncio
 
-# Token do bot
-TOKEN = '6859463280:AAGthI7TXdRdVJIp9U-cOvgF0EcC6AITdeM'
-bot = Bot(token=TOKEN)
+app = Flask(__name__)
+app.secret_key = 'seu_segredo_aqui'
 
-# Configurações automáticas
-CHAT_ID = '@VendaemAlta'  # Nome de usuário do grupo/canal
-MESSAGE = """🔥 ATENÇÃO 🔥
-Lucros de R$ 17,29
-Faca um Teste: https://paineltelegram.netlify.app/
-Ganhe 65% de Comissão com o BotPro Anúncios & LEDs!"""
+api_id = '24010179'  # Substitua pelo seu API ID
+api_hash = '7ddc83d894b896975083f985effffe11'  # Substitua pelo seu API Hash
 
-PHOTO_PATH = 'grupos.jpg'
-NUM_TIMES = 2000  # Quantidade de envios
-MESSAGE_INTERVAL = 20  # Intervalo entre mensagens em segundos
-PHOTO_INTERVAL = 20  # Intervalo entre fotos em segundos
+client = None
+loop = asyncio.new_event_loop()
 
-executor = ThreadPoolExecutor()
+def ensure_sessions_dir():
+    if not os.path.exists('sessions'):
+        os.makedirs('sessions')
 
-# Função para enviar mensagem de forma síncrona
-def send_message_sync(chat_id, message):
-    return bot.send_message(chat_id=chat_id, text=message)
+async def async_start_client(phone_number):
+    global client
+    session_file = f'sessions/{phone_number}.session'
+    ensure_sessions_dir()
+    
+    if os.path.exists(session_file):
+        with open(session_file, 'r') as f:
+            session_string = f.read().strip()
+            client = TelegramClient(StringSession(session_string), api_id, api_hash)
+    else:
+        client = TelegramClient(StringSession(), api_id, api_hash)
+        await client.connect()
+        if not await client.is_user_authorized():
+            await client.start(phone=phone_number)
+            session_string = client.session.save()
+            with open(session_file, 'w') as f:
+                f.write(session_string)
 
-# Função para enviar foto de forma síncrona
-def send_photo_sync(chat_id, photo_path):
-    with open(photo_path, 'rb') as photo:
-        return bot.send_photo(chat_id=chat_id, photo=photo)
+    await client.connect()
 
-# Função para enviar texto e imagem
-async def send_text_and_photo(chat_id, message, photo_path, num_times, message_interval, photo_interval):
+def start_client(phone_number):
+    loop.run_until_complete(async_start_client(phone_number))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        phone_number = request.form['phone_number']
+        session['phone_number'] = phone_number
+        start_client(phone_number)
+        return redirect(url_for('index'))
+    return render_template('login.html')
+
+@app.route('/')
+def index():
+    if 'phone_number' not in session:
+        return redirect(url_for('login'))
+
+    phone_number = session.get('phone_number')
+
+    if client is None or not client.is_connected():
+        start_client(phone_number)
+
     try:
-        for i in range(num_times):
-            # Enviar a mensagem
-            await asyncio.get_event_loop().run_in_executor(executor, send_message_sync, chat_id, message)
-            print(f"Mensagem {i + 1} enviada com sucesso!")
-            await asyncio.sleep(message_interval)
+        dialogs = loop.run_until_complete(client.get_dialogs())
+        groups = [(dialog.id, dialog.name) for dialog in dialogs if dialog.is_group]
 
-            # Verificar se o arquivo existe e é uma imagem válida
-            if os.path.isfile(photo_path) and photo_path.lower().endswith(('.jpg', '.jpeg')):
-                await asyncio.get_event_loop().run_in_executor(executor, send_photo_sync, chat_id, photo_path)
-                print(f"Foto {i + 1} enviada com sucesso!")
-            else:
-                print(f"Erro: Arquivo de imagem inválido ou não encontrado no caminho: {photo_path}")
-            await asyncio.sleep(photo_interval)
+        return render_template('index.html', groups=groups)
 
     except Exception as e:
-        print(f"Erro ao enviar mensagem ou foto: {e}")
+        print(f"Erro ao tentar listar os grupos: {str(e)}")
+        return render_template('index.html', groups=[])
 
-# Função principal
-async def main():
-    await send_text_and_photo(CHAT_ID, MESSAGE, PHOTO_PATH, NUM_TIMES, MESSAGE_INTERVAL, PHOTO_INTERVAL)
+@app.route('/send_messages', methods=['POST'])
+def send_messages():
+    group_ids = request.form.getlist('groups')
+    total_messages = int(request.form['total_messages'])
+    delay = float(request.form['delay'])
+    message = request.form['message']
+
+    session['status'] = {'sending': [], 'errors': []}
+
+    async def send_messages_task():
+        for group_id in group_ids:
+            try:
+                for _ in range(total_messages):
+                    await client.send_message(int(group_id), message)
+                    session['status']['sending'].append(f"✅ Mensagem enviada para o grupo {group_id}")
+                    await asyncio.sleep(delay)
+            except Exception as e:
+                session['status']['errors'].append(f"❌ Erro ao enviar mensagem para o grupo {group_id}: {str(e)}")
+
+    loop.run_until_complete(send_messages_task())
+    return redirect(url_for('status'))
+
+@app.route('/status')
+def status():
+    if 'status' in session:
+        return render_template('status.html', status=session['status'])
+    return redirect(url_for('index'))
+
+@app.route('/status_updates')
+def status_updates():
+    if 'status' in session:
+        return jsonify(session['status']['sending'])
+    return jsonify([])
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    app.run(debug=True)
