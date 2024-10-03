@@ -1,2 +1,3 @@
-telethon==1.24.0
+Flask
+Telethon==1.24.0
 python-telegram-bot==13.7
