@@ -1,6 +1,1 @@
-name: myenv
-dependencies:
-  - python=3.10
-  - flake8
-  - pytest
-  # Adicione outras dependências necessárias aqui
+conda env update --file environment.yml --name base
