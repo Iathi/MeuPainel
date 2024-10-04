@@ -19,7 +19,7 @@ jobs:
 
     - name: Instalar dependências
       run: |
-        conda env update --file environment.yml --name base  # Verifique o caminho aqui
+        conda env update --file environment.yml --name base  # Certifique-se de que o caminho está correto
 
     - name: Lint com flake8
       run: |
