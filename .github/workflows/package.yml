@@ -1,0 +1,31 @@
+name: Python Package usando Conda
+
+on: [push]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configurar Miniconda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        python-version: '3.10'
+        auto-update-conda: true
+
+    - name: Instalar dependências
+      run: |
+        conda env update --file environment.yml --name base
+
+    - name: Lint com flake8
+      run: |
+        conda run --name base flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        conda run --name base flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Testar com pytest
+      run: |
+        conda run --name base pytest
