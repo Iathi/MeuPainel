@@ -1,9 +1,4 @@
 # railway.toml
-build = {
-  env = {
-    "FLASK_ENV" = "production"
-  }
-}
 
 [build]
   command = "npm install --prefix frontend && npm run build --prefix frontend && pip install -r backend/requirements.txt"
