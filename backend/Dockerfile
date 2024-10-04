@@ -2,7 +2,7 @@
 FROM python:3.9-slim
 
 # Definindo o diretório de trabalho
-WORKDIR /app
+WORKDIR /
 
 # Copiando o arquivo de requisitos
 COPY requirements.txt ./
