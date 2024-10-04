@@ -1,12 +1,10 @@
 # railway.toml
-
 [build]
-  # Comando para instalar as dependências do frontend e do backend
-  command = "npm install --prefix frontend && npm run build --prefix frontend && pip install -r backend/requirements.txt"
-  
-  # O diretório onde o servidor Flask será executado
+  # Define o diretório do backend como o diretório principal para construção
+  command = "pip install -r backend/requirements.txt && gunicorn backend.app:app"
   output = "backend"
 
-# Configurações adicionais, se necessário
-[env]
-FLASK_ENV = "production"
+# Para o frontend, você deve adicionar uma configuração de construção separada no Netlify
+[netlify]
+  publish = "frontend/build"
+  command = "npm install --prefix frontend && npm run build --prefix frontend"
