@@ -1,9 +1,0 @@
-[build]
-# Definir o diretório para a aplicação backend
-base = "./backend"
-
-# Comando para instalar as dependências do backend
-install = "pip install -r requirements.txt"
-
-# Comando para iniciar o servidor usando Gunicorn
-start = "gunicorn app:app"
