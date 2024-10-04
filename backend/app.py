@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_cors import CORS
 from telethon import TelegramClient
 from telethon.sessions import StringSession
@@ -6,11 +6,11 @@ import os
 import asyncio
 
 app = Flask(__name__)
-CORS(app)  # Adiciona suporte a CORS
+CORS(app)  # Adicionando suporte a CORS
 app.secret_key = 'seu_segredo_aqui'
 
-api_id = '24010179'  # Substitua pelo seu API ID
-api_hash = '7ddc83d894b896975083f985effffe11'  # Substitua pelo seu API Hash
+api_id = '24010179'
+api_hash = '7ddc83d894b896975083f985effffe11'
 
 client = None
 loop = asyncio.new_event_loop()
@@ -23,7 +23,7 @@ async def async_start_client(phone_number):
     global client
     session_file = f'sessions/{phone_number}.session'
     ensure_sessions_dir()
-    
+
     if os.path.exists(session_file):
         with open(session_file, 'r') as f:
             session_string = f.read().strip()
@@ -42,25 +42,34 @@ async def async_start_client(phone_number):
 def start_client(phone_number):
     loop.run_until_complete(async_start_client(phone_number))
 
-@app.route('/send_messages', methods=['POST'])
-def send_messages():
-    data = request.json
-    group_ids = data.get('groups')
-    total_messages = int(data.get('total_messages'))
-    delay = float(data.get('delay'))
-    message = data.get('message')
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        phone_number = request.form['phone_number']
+        session['phone_number'] = phone_number
+        start_client(phone_number)
+        return redirect(url_for('index'))
+    return render_template('login.html')
 
-    async def send_messages_task():
-        for group_id in group_ids:
-            try:
-                for _ in range(total_messages):
-                    await client.send_message(int(group_id), message)
-                    await asyncio.sleep(delay)
-            except Exception as e:
-                return jsonify({'status': f"Erro ao enviar mensagem para o grupo {group_id}: {str(e)}"})
+@app.route('/')
+def index():
+    if 'phone_number' not in session:
+        return redirect(url_for('login'))
 
-    loop.run_until_complete(send_messages_task())
-    return jsonify({'status': 'Mensagens enviadas com sucesso'})
+    phone_number = session.get('phone_number')
+
+    if client is None or not client.is_connected():
+        start_client(phone_number)
+
+    try:
+        dialogs = loop.run_until_complete(client.get_dialogs())
+        groups = [(dialog.id, dialog.name) for dialog in dialogs if dialog.is_group]
+
+        return render_template('index.html', groups=groups)
+
+    except Exception as e:
+        print(f"Erro ao tentar listar os grupos: {str(e)}")
+        return render_template('index.html', groups=[])
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    app.run()
