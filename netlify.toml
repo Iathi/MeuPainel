@@ -1,7 +1,0 @@
-[build]
-  command = "npm install && npm run build" # Para instalar dependências e construir o projeto
-  publish = "frontend/build"                # O diretório a ser publicado
-
-[dev]
-  command = "npm start"
-  publish = "frontend/build"
