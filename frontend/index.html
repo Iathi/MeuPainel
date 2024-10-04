@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Envio de Mensagens</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Enviar Mensagens para Grupos</h1>
+    <form id="sendForm" action="#" method="POST">
+      <label for="message">Mensagem:</label><br>
+      <textarea id="message" name="message" required></textarea><br><br>
+
+      <label for="groups">ID dos Grupos (Separados por vírgula):</label><br>
+      <input type="text" id="groups" name="groups" required><br><br>
+
+      <label for="total_messages">Total de Mensagens:</label><br>
+      <input type="number" id="total_messages" name="total_messages" required><br><br>
+
+      <label for="delay">Delay entre mensagens (segundos):</label><br>
+      <input type="number" id="delay" name="delay" required><br><br>
+
+      <button type="submit">Enviar Mensagens</button>
+    </form>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
