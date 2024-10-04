@@ -1,4 +1,10 @@
+# railway.toml
+build = {
+  env = {
+    "FLASK_ENV" = "production"
+  }
+}
+
 [build]
-base = "./backend"  # Diretório do backend
-install = "pip install -r requirements.txt"  # Comando para instalar as dependências
-start = "gunicorn app:app"  # Comando para iniciar o servidor
+  command = "npm install --prefix frontend && npm run build --prefix frontend && pip install -r backend/requirements.txt"
+  output = "backend" # O diretório onde o seu app Flask está
