@@ -1,5 +1,12 @@
 # railway.toml
 
 [build]
+  # Comando para instalar as dependências do frontend e do backend
   command = "npm install --prefix frontend && npm run build --prefix frontend && pip install -r backend/requirements.txt"
-  output = "backend" # O diretório onde o seu app Flask está
+  
+  # O diretório onde o servidor Flask será executado
+  output = "backend"
+
+# Configurações adicionais, se necessário
+[env]
+FLASK_ENV = "production"
