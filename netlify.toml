@@ -1,4 +1,4 @@
 [build]
   command = "npm run build"
-  publish = "src"  # Ou 'build', dependendo do que seu comando de build gera
+  publish = "/"  # Ou 'build', dependendo do que seu comando de build gera
   functions = "netlify/functions"
