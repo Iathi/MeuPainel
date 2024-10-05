@@ -1,10 +1,7 @@
-name: Build and Test Telethon
+name: Build and Update Conda Environment
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
     branches:
       - main
 
@@ -23,16 +20,19 @@ jobs:
       with:
         python-version: 3.9  # Definir a versão do Python
         auto-activate-base: false
-        environment-file: environment.yml  # Arquivo opcional se você tiver um environment.yml no projeto
         activate-environment: myenv  # Nome do ambiente Conda a ser criado
 
-    # Passo 3: Instalar Telethon via pip
-    - name: Install Telethon
+    # Passo 3: Atualizar o ambiente Conda com o arquivo environment.yml
+    - name: Update Conda environment
+      run: conda env update --file environment.yml --name myenv
+
+    # Passo 4: Instalar Telethon usando pip
+    - name: Install Telethon with pip
       run: |
         conda activate myenv
         pip install telethon
 
-    # Passo 4: Executar o script Python para verificar a instalação do Telethon
+    # Passo 5: Executar um script Python para verificar a instalação do Telethon
     - name: Run Python script
       run: |
         conda activate myenv
