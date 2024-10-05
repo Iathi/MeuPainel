@@ -7,8 +7,8 @@ import asyncio
 app = Flask(__name__)
 app.secret_key = 'seu_segredo_aqui'
 
-api_id = os.getenv('API_ID')  # Pegue as variáveis de ambiente no Railway
-api_hash = os.getenv('API_HASH')
+api_id = '24010179'  # Substitua pelo seu API ID
+api_hash = '7ddc83d894b896975083f985effffe11'  # Substitua pelo seu API Hash
 
 client = None
 loop = asyncio.new_event_loop()
@@ -49,7 +49,9 @@ def login():
     if request.method == 'POST':
         phone_number = request.form['phone_number']
         session['phone_number'] = phone_number
+        # Iniciar o cliente e verificar se é necessário código
         if not start_client(phone_number):
+            # Redirecionar para a página de verificação se necessário
             return redirect(url_for('verify_code'))
         return redirect(url_for('index'))
     return render_template('login.html')
@@ -62,6 +64,7 @@ def verify_code():
         if client and client.session:
             try:
                 loop.run_until_complete(client.sign_in(code=code))
+                # Após a verificação, salve a sessão
                 session_file = f'sessions/{phone_number}.session'
                 session_string = client.session.save()
                 with open(session_file, 'w') as f:
@@ -83,7 +86,8 @@ def index():
 
     try:
         dialogs = loop.run_until_complete(client.get_dialogs())
-        groups = [(dialog.id, dialog.name) for dialog in dialogs if dialog.is_group]
+        # Verificar e listar apenas grupos
+        groups = [(dialog.id, dialog.title) for dialog in dialogs if dialog.is_group or dialog.is_channel]
 
         return render_template('index.html', groups=groups)
 
@@ -108,6 +112,7 @@ def send_messages():
             if not sending:
                 break
             try:
+                # Enviar uma única mensagem para cada grupo
                 await client.send_message(int(group_id), message)
                 session['status']['sending'].append(f"✅ Mensagem enviada para o grupo {group_id}")
                 await asyncio.sleep(delay)
