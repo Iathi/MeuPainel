@@ -1,0 +1,6 @@
+flask
+telethon
+requests
+numpy
+pandas
+matplotlib
