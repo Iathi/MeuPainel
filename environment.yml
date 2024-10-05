@@ -1,9 +1,11 @@
-name: myenv
+name: myapp
 channels:
   - defaults
 dependencies:
   - python=3.9
   - flask
-  - numpy
-  - pandas
-  - other-package
+  - flask-cors
+  - telethon
+  - asyncio
+  - pip:
+      - any_other_packages
