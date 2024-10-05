@@ -134,4 +134,4 @@ def stop_sending():
     return jsonify(session.get('status', {'sending': [], 'errors': []}))
 
 if __name__ == '__main__':
-    app.run(host='https://6700a82883442d0008d92100--exquisite-mooncake-d37c88.netlify.app/', port=int(os.environ.get('PORT', 5000)), debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
