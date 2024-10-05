@@ -9,23 +9,23 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # Etapa para fazer checkout do código no repositório
+      # Check out code
       - name: Check out code
         uses: actions/checkout@v2
       
-      # Etapa para configurar o Docker Buildx
+      # Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       
-      # Etapa para construir a imagem Docker
+      # Build the Docker image
       - name: Build the Docker image
         run: |
           docker build . -t ${{ secrets.DOCKER_HUB_USERNAME }}/my_flask_app:latest
-          
-      # Etapa para logar no Docker Hub
+      
+      # Log in to Docker Hub
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
       
-      # Etapa para enviar a imagem Docker para o Docker Hub
+      # Push the Docker image
       - name: Push the Docker image
         run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/my_flask_app:latest
