@@ -1,10 +1,3 @@
-# railway.toml
 [build]
-  # Define o diretório do backend como o diretório principal para construção
-  command = "pip install -r backend/requirements.txt && gunicorn backend.app:app"
-  output = "backend"
-
-# Para o frontend, você deve adicionar uma configuração de construção separada no Netlify
-[netlify]
-  publish = "frontend/build"
-  command = "npm install --prefix frontend && npm run build --prefix frontend"
+nixpacksBuild = true
+nixpacksPlan = "custom-plan.toml"
