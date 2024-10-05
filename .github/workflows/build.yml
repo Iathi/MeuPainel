@@ -1,0 +1,39 @@
+name: Build and Test Telethon
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Passo 1: Fazer checkout do código
+    - name: Check out the code
+      uses: actions/checkout@v2
+
+    # Passo 2: Instalar Conda e configurar o ambiente
+    - name: Set up Miniconda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        python-version: 3.9  # Definir a versão do Python
+        auto-activate-base: false
+        environment-file: environment.yml  # Arquivo opcional se você tiver um environment.yml no projeto
+        activate-environment: myenv  # Nome do ambiente Conda a ser criado
+
+    # Passo 3: Instalar Telethon via pip
+    - name: Install Telethon
+      run: |
+        conda activate myenv
+        pip install telethon
+
+    # Passo 4: Executar o script Python para verificar a instalação do Telethon
+    - name: Run Python script
+      run: |
+        conda activate myenv
+        python -c "import telethon; print(telethon.__version__)"
