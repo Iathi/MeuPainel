@@ -5,10 +5,10 @@ import os
 import asyncio
 
 app = Flask(__name__)
-app.secret_key = 'seu_segredo_aqui'  # Alterar para uma chave segura
+app.secret_key = 'seu_segredo_aqui'
 
-api_id = os.getenv('API_ID')  # Defina como variável de ambiente
-api_hash = os.getenv('API_HASH')  # Defina como variável de ambiente
+api_id = '24010179'  # Substitua pelo seu API ID
+api_hash = '7ddc83d894b896975083f985effffe11'  # Substitua pelo seu API Hash
 
 client = None
 loop = asyncio.new_event_loop()
@@ -49,7 +49,9 @@ def login():
     if request.method == 'POST':
         phone_number = request.form['phone_number']
         session['phone_number'] = phone_number
+        # Iniciar o cliente e verificar se é necessário código
         if not start_client(phone_number):
+            # Redirecionar para a página de verificação se necessário
             return redirect(url_for('verify_code'))
         return redirect(url_for('index'))
     return render_template('login.html')
@@ -62,6 +64,7 @@ def verify_code():
         if client and client.session:
             try:
                 loop.run_until_complete(client.sign_in(code=code))
+                # Após a verificação, salve a sessão
                 session_file = f'sessions/{phone_number}.session'
                 session_string = client.session.save()
                 with open(session_file, 'w') as f:
@@ -108,6 +111,7 @@ def send_messages():
             if not sending:
                 break
             try:
+                # Enviar uma única mensagem para cada grupo
                 await client.send_message(int(group_id), message)
                 session['status']['sending'].append(f"✅ Mensagem enviada para o grupo {group_id}")
                 await asyncio.sleep(delay)
@@ -134,4 +138,4 @@ def stop_sending():
     return jsonify(session.get('status', {'sending': [], 'errors': []}))
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
+    app.run(debug=True)
