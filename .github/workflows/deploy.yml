@@ -1,4 +1,4 @@
-name: Build and Update Conda Environment
+name: Lint and Build
 
 on:
   push:
@@ -6,34 +6,27 @@ on:
       - main
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
 
     steps:
-    # Passo 1: Fazer checkout do código
-    - name: Check out the code
-      uses: actions/checkout@v2
+      # Passo 1: Fazer checkout do código
+      - name: Check out the code
+        uses: actions/checkout@v2
 
-    # Passo 2: Instalar Conda e configurar o ambiente
-    - name: Set up Miniconda
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        python-version: 3.9  # Definir a versão do Python
-        auto-activate-base: false
-        activate-environment: myenv  # Nome do ambiente Conda a ser criado
+      # Passo 2: Configurar o Miniconda
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: 3.9
+          auto-activate-base: false
+          activate-environment: myenv  # Nome do ambiente a ser criado
 
-    # Passo 3: Atualizar o ambiente Conda com o arquivo environment.yml
-    - name: Update Conda environment
-      run: conda env update --file environment.yml --name myenv
+      # Passo 3: Atualizar o ambiente Conda
+      - name: Update Conda environment
+        run: conda env update --file environment.yml --name myenv
 
-    # Passo 4: Instalar Telethon usando pip
-    - name: Install Telethon with pip
-      run: |
-        conda activate myenv
-        pip install telethon
-
-    # Passo 5: Executar um script Python para verificar a instalação do Telethon
-    - name: Run Python script
-      run: |
-        conda activate myenv
-        python -c "import telethon; print(telethon.__version__)"
+      # Passo 4: Executar flake8
+      - name: Run flake8
+        run: |
+          conda run --name myenv flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
