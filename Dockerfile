@@ -2,7 +2,7 @@
 FROM python:3.9
 
 # Definir o diretório de trabalho
-WORKDIR /app
+WORKDIR /MeuPainel
 
 # Copiar os arquivos requirements.txt para o diretório de trabalho
 COPY requirements.txt .
