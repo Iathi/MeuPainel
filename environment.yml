@@ -3,6 +3,4 @@ channels:
   - defaults
 dependencies:
   - python=3.9
-  - telethon
-  - pip
-
+  # Adicione outros pacotes Conda aqui, mas não o Telethon
