@@ -1,6 +1,4 @@
 [build]
-  publish = "dist"         # Diretório de publicação
-  command = "npm run build" # Comando para construir o projeto
-
-[functions]
-  directory = "netlify/functions" # Diretório para funções do Netlify
+  command = "npm run build"
+  publish = "dist"  # Ou 'build', dependendo do que seu comando de build gera
+  functions = "netlify/functions"
