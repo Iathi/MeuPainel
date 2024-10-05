@@ -5,3 +5,5 @@ dependencies:
   - python=3.9
   - flake8  # Adicionando flake8 aqui
   # Adicione outros pacotes Conda que você precisa
+  - pytest  # Adicionando pytest aqui
+  # Adicione outros pacotes Conda que você precisa
