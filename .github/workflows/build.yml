@@ -23,11 +23,10 @@ jobs:
       with:
         python-version: 3.9  # Definir a versão do Python
         auto-activate-base: false
-        environment-file: environment.yml  # Arquivo opcional se você tiver um environment.yml no projeto
         activate-environment: myenv  # Nome do ambiente Conda a ser criado
 
-    # Passo 3: Instalar Telethon via pip
-    - name: Install Telethon
+    # Passo 3: Instalar dependências via pip, incluindo o Telethon
+    - name: Install dependencies with pip
       run: |
         conda activate myenv
         pip install telethon
