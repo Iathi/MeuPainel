@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Envio de Mensagens</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>Enviar Mensagem Automática</h1>
+
+    <form id="send-form" action="/send_messages" method="post">
+        <label for="groups">Selecione os Grupos:</label>
+        <select id="groups" name="groups" multiple>
+            {% for group_id, group_name in groups %}
+                <option value="{{ group_id }}">{{ group_name }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="message">Mensagem:</label>
+        <textarea id="message" name="message" rows="4" cols="50"></textarea>
+
+        <label for="delay">Atraso entre mensagens (em segundos):</label>
+        <input type="number" id="delay" name="delay" min="1" step="1">
+
+        <button type="submit">Enviar Mensagens</button>
+    </form>
+
+    <div id="status"></div>
+
+    <script src="/static/scripts.js"></script>
+</body>
+</html>
