@@ -1,1 +1,9 @@
-conda env update --file ../environment.yml --name MeuPainel
+name: myenv
+channels:
+  - defaults
+dependencies:
+  - python=3.9
+  - flask
+  - numpy
+  - pandas
+  - other-package
