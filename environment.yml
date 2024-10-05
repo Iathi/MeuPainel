@@ -1,14 +1,8 @@
-name: mPainel # Name of the environment
+name: myenv
 channels:
-  - defaults  # Channel to install from, could also include conda-forge, etc.
+  - defaults
 dependencies:
-  - python=3.9  # Python version
-  - flask  # Example of a Flask web framework dependency
-  - telethon  # For Telegram API integration
-  - requests  # HTTP library for making requests
-  - numpy  # For numerical computations
-  - pandas  # Data analysis library
-  - matplotlib  # Plotting library
-  - pip  # Pip installer
-  - pip:
-      - some-package-from-pip  # Any additional package you want to install using pip
+  - python=3.9
+  - telethon
+  - pip
+
