@@ -124,64 +124,96 @@
             </div>
             <div class="form-group">
                 <label for="message">Mensagem:</label>
-                <textarea name="message" id="message" rows="5"></textarea>
+                <textarea name="message" rows="4" required></textarea>
             </div>
             <div class="form-group">
-                <label for="delay">Intervalo entre mensagens (em segundos):</label>
-                <input type="number" name="delay" id="delay" step="0.1" min="0.1" value="1">
+                <label for="total_messages">Quantidade de Mensagens:</label>
+                <input type="number" name="total_messages" min="1" value="1" required>
             </div>
-            <button type="submit">Enviar Mensagens</button>
-            <button type="button" id="stopButton" style="background-color: red;">Parar Envio</button>
+            <div class="form-group">
+                <label for="delay">Delay entre Mensagens (em segundos):</label>
+                <input type="number" name="delay" min="1" value="5" required>
+            </div>
+            <button type="button" onclick="startSending()">Enviar Mensagens</button>
+            <button type="button" onclick="stopSending()">Parar Envio</button>
         </form>
-        <div class="status-container">
-            <h2>Status</h2>
-            <div id="status-updates"></div>
+    </div>
+
+    <!-- Status do envio -->
+    <div class="container status-container">
+        <h2>Status do Envio</h2>
+        <div id="status-updates">
+            <p>Nenhuma mensagem enviada ainda.</p>
         </div>
     </div>
 
     <script>
-        const messageForm = document.getElementById('messageForm');
-        const statusUpdates = document.getElementById('status-updates');
-        const stopButton = document.getElementById('stopButton');
-        
-        messageForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            
-            const formData = new FormData(messageForm);
+        let sendingInterval;
+
+        function startSending() {
+            const formData = new FormData(document.getElementById('messageForm'));
+
             fetch('/send_messages', {
                 method: 'POST',
                 body: formData
-            }).then(response => response.json())
-            .then(updateStatus);
-        });
-
-        stopButton.addEventListener('click', function() {
-            fetch('/stop_sending', { method: 'POST' })
+            })
             .then(response => response.json())
-            .then(updateStatus);
-        });
-
-        function updateStatus(data) {
-            statusUpdates.innerHTML = '';
-            data.sending.forEach(item => {
-                const div = document.createElement('div');
-                div.classList.add('status-item');
-                div.innerHTML = `<span>${item}</span>`;
-                statusUpdates.appendChild(div);
-            });
-            data.errors.forEach(item => {
-                const div = document.createElement('div');
-                div.classList.add('status-item', 'error-item');
-                div.innerHTML = `<span>${item}</span>`;
-                statusUpdates.appendChild(div);
+            .then(data => {
+                updateStatus(data);
+                // Atualiza o status a cada 3 segundos
+                sendingInterval = setInterval(fetchStatusUpdates, 3000);
+            })
+            .catch(error => {
+                console.error('Erro ao enviar mensagens:', error);
             });
         }
 
-        setInterval(() => {
+        function stopSending() {
+            clearInterval(sendingInterval);
+            fetch('/stop_sending', { method: 'POST' })  // Adiciona a requisição para parar o envio
+                .then(response => response.json())
+                .then(data => {
+                    updateStatus(data);
+                })
+                .catch(error => {
+                    console.error('Erro ao parar o envio:', error);
+                });
+        }
+
+        function fetchStatusUpdates() {
             fetch('/status_updates')
-            .then(response => response.json())
-            .then(updateStatus);
-        }, 3000);
+                .then(response => response.json())
+                .then(data => {
+                    updateStatus(data);
+                });
+        }
+
+        function updateStatus(status) {
+            const statusContainer = document.getElementById('status-updates');
+            statusContainer.innerHTML = '';
+
+            if (status.sending.length > 0) {
+                status.sending.forEach((msg) => {
+                    const statusItem = document.createElement('div');
+                    statusItem.classList.add('status-item');
+                    statusItem.innerHTML = `<span>${msg}</span>`;
+                    statusContainer.appendChild(statusItem);
+                });
+            }
+
+            if (status.errors.length > 0) {
+                status.errors.forEach((error) => {
+                    const errorItem = document.createElement('div');
+                    errorItem.classList.add('status-item', 'error-item');
+                    errorItem.innerHTML = `<span>${error}</span>`;
+                    statusContainer.appendChild(errorItem);
+                });
+            }
+
+            if (status.sending.length === 0 && status.errors.length === 0) {
+                statusContainer.innerHTML = '<p>Nenhuma mensagem enviada ainda.</p>';
+            }
+        }
     </script>
 </body>
 </html>
