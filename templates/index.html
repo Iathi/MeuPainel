@@ -60,7 +60,6 @@
             font-size: 16px;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            margin-right: 10px;
         }
         button:hover {
             background-color: #006699;
@@ -98,18 +97,6 @@
         .error-item {
             color: red;
         }
-        .group-selection {
-            position: relative;
-        }
-        .select-group-label {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .group-count {
-            font-size: 14px;
-            color: #888;
-        }
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -128,16 +115,12 @@
     <div class="container">
         <form id="messageForm">
             <div class="form-group">
-                <div class="select-group-label">
-                    <label for="groups">Selecione os Grupos:</label>
-                    <span class="group-count" id="groupCount">0 selecionados</span>
-                </div>
-                <select name="groups" id="groups" multiple onchange="updateGroupCount()">
+                <label for="groups">Selecione os Grupos:</label>
+                <select name="groups" multiple>
                     {% for group_id, group_name in groups %}
                         <option value="{{ group_id }}">{{ group_name }}</option>
                     {% endfor %}
                 </select>
-                <button type="button" onclick="toggleSelectAll()">Selecionar/Deselecionar Todos</button>
             </div>
             <div class="form-group">
                 <label for="message">Mensagem:</label>
@@ -230,24 +213,6 @@
             if (status.sending.length === 0 && status.errors.length === 0) {
                 statusContainer.innerHTML = '<p>Nenhuma mensagem enviada ainda.</p>';
             }
-        }
-
-        function updateGroupCount() {
-            const groupSelect = document.getElementById('groups');
-            const selectedOptions = Array.from(groupSelect.selectedOptions);
-            const groupCount = document.getElementById('groupCount');
-            groupCount.textContent = `${selectedOptions.length} selecionados`;
-        }
-
-        function toggleSelectAll() {
-            const groupSelect = document.getElementById('groups');
-            const allSelected = Array.from(groupSelect.selectedOptions).length === groupSelect.options.length;
-
-            for (let i = 0; i < groupSelect.options.length; i++) {
-                groupSelect.options[i].selected = !allSelected;
-            }
-
-            updateGroupCount();
         }
     </script>
 </body>
