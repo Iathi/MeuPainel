@@ -1,7 +1,3 @@
-flask-cors
-flask
-telethon
-requests
-numpy
-pandas
-matplotlib
+quart==0.17.0
+telethon==1.29.0
+asyncio==3.4.3
