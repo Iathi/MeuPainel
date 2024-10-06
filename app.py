@@ -86,8 +86,7 @@ def index():
 
     try:
         dialogs = loop.run_until_complete(client.get_dialogs())
-        # Verificar e listar apenas grupos
-        groups = [(dialog.id, dialog.title) for dialog in dialogs if dialog.is_group or dialog.is_channel]
+        groups = [(dialog.id, dialog.name) for dialog in dialogs if dialog.is_group]
 
         return render_template('index.html', groups=groups)
 
@@ -139,5 +138,5 @@ def stop_sending():
     return jsonify(session.get('status', {'sending': [], 'errors': []}))
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    port = int(os.environ.get('PORT', 5000))  # Ajustar para o Railway
+    app.run(host='0.0.0.0', port=port, debug=True)
