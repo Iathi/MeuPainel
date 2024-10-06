@@ -5,7 +5,7 @@ import os
 import asyncio
 
 app = Flask(__name__)
-app.secret_key = 'seu_segredo_aqui'
+app.secret_key = 'seu_segredo_aqui'  # Substitua pelo seu segredo
 
 api_id = '24010179'  # Substitua pelo seu API ID
 api_hash = '7ddc83d894b896975083f985effffe11'  # Substitua pelo seu API Hash
@@ -15,10 +15,12 @@ loop = asyncio.new_event_loop()
 sending = False  # Variável global para controlar o envio
 stop_sending_event = asyncio.Event()
 
+# Garantir que o diretório de sessões exista
 def ensure_sessions_dir():
     if not os.path.exists('sessions'):
         os.makedirs('sessions')
 
+# Função assíncrona para iniciar o cliente do Telegram
 async def async_start_client(phone_number):
     global client
     session_file = f'sessions/{phone_number}.session'
@@ -41,9 +43,11 @@ async def async_start_client(phone_number):
     await client.connect()
     return True  # Login bem-sucedido
 
+# Iniciar cliente com event loop
 def start_client(phone_number):
     return loop.run_until_complete(async_start_client(phone_number))
 
+# Rota de login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -56,6 +60,7 @@ def login():
         return redirect(url_for('index'))
     return render_template('login.html')
 
+# Verificação do código enviado pelo Telegram
 @app.route('/verify_code', methods=['GET', 'POST'])
 def verify_code():
     if request.method == 'POST':
@@ -74,6 +79,7 @@ def verify_code():
                 return f"Erro ao verificar o código: {e}"
     return render_template('verify_code.html')
 
+# Página principal com listagem dos grupos
 @app.route('/')
 def index():
     if 'phone_number' not in session:
@@ -94,6 +100,7 @@ def index():
         print(f"Erro ao tentar listar os grupos: {str(e)}")
         return render_template('index.html', groups=[])
 
+# Enviar mensagens para os grupos selecionados
 @app.route('/send_messages', methods=['POST'])
 def send_messages():
     global sending, stop_sending_event
@@ -124,12 +131,14 @@ def send_messages():
     loop.run_until_complete(send_messages_task())
     return jsonify(session['status'])
 
+# Rota para consultar status das mensagens enviadas
 @app.route('/status_updates')
 def status_updates():
     if 'status' in session:
         return jsonify(session['status'])
     return jsonify({'sending': [], 'errors': []})
 
+# Rota para parar o envio de mensagens
 @app.route('/stop_sending', methods=['POST'])
 def stop_sending():
     global sending
@@ -137,6 +146,7 @@ def stop_sending():
     stop_sending_event.set()
     return jsonify(session.get('status', {'sending': [], 'errors': []}))
 
+# Executar o servidor Flask
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))  # Ajustar para o Railway
-    app.run(host='0.0.0.0', port=port, debug=True)
+    port = int(os.environ.get('PORT', 5000))  # Pegar a porta da variável de ambiente no Railway
+    app.run(debug=True, host='0.0.0.0', port=port)
