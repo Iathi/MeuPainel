@@ -2,7 +2,8 @@
   "name": "meupainel",
   "version": "1.0.0",
   "description": "Meu Painel de Controle",
-  "main": "index.html",
+  "main": "
+templates/index.html",
   "scripts": {
     "build": "echo 'Build step here' && exit 0"
   },
