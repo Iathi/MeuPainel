@@ -49,9 +49,7 @@ def login():
     if request.method == 'POST':
         phone_number = request.form['phone_number']
         session['phone_number'] = phone_number
-        # Iniciar o cliente e verificar se é necessário código
         if not start_client(phone_number):
-            # Redirecionar para a página de verificação se necessário
             return redirect(url_for('verify_code'))
         return redirect(url_for('index'))
     return render_template('login.html')
@@ -64,7 +62,6 @@ def verify_code():
         if client and client.session:
             try:
                 loop.run_until_complete(client.sign_in(code=code))
-                # Após a verificação, salve a sessão
                 session_file = f'sessions/{phone_number}.session'
                 session_string = client.session.save()
                 with open(session_file, 'w') as f:
@@ -87,7 +84,6 @@ def index():
     try:
         dialogs = loop.run_until_complete(client.get_dialogs())
         groups = [(dialog.id, dialog.name) for dialog in dialogs if dialog.is_group]
-
         return render_template('index.html', groups=groups)
 
     except Exception as e:
@@ -111,7 +107,6 @@ def send_messages():
             if not sending:
                 break
             try:
-                # Enviar uma única mensagem para cada grupo
                 await client.send_message(int(group_id), message)
                 session['status']['sending'].append(f"✅ Mensagem enviada para o grupo {group_id}")
                 await asyncio.sleep(delay)
@@ -138,6 +133,4 @@ def stop_sending():
     return jsonify(session.get('status', {'sending': [], 'errors': []}))
 
 if __name__ == '__main__':
-    # Pegando a porta e o IP fornecidos pela Railway
-    port = int(os.environ.get('PORT', 5000))  # Se a Railway fornecer a variável PORT, ela será usada
-    app.run(host='0.0.0.0', port=port, debug=True)  # Executar no IP e porta públicos
+    app.run(debug=True)
