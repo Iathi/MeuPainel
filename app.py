@@ -1,19 +1,25 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from telethon import TelegramClient
 from telethon.sessions import StringSession
+from telethon.errors import FloodWaitError
 import os
 import asyncio
+import logging
+import time
 
 app = Flask(__name__)
-app.secret_key = 'seu_segredo_aqui'
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'default_secret')
 
-api_id = '24010179'  # Substitua pelo seu API ID
-api_hash = '7ddc83d894b896975083f985effffe11'  # Substitua pelo seu API Hash
+api_id = os.environ.get('TELEGRAM_API_ID')  # Use environment variable
+api_hash = os.environ.get('TELEGRAM_API_HASH')  # Use environment variable
 
 client = None
 loop = asyncio.new_event_loop()
-sending = False  # Variável global para controlar o envio
+sending = False
 stop_sending_event = asyncio.Event()
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 
 def ensure_sessions_dir():
     if not os.path.exists('sessions'):
@@ -23,21 +29,29 @@ async def async_start_client(phone_number):
     global client
     session_file = f'sessions/{phone_number}.session'
     ensure_sessions_dir()
-    
-    if os.path.exists(session_file):
-        with open(session_file, 'r') as f:
-            session_string = f.read().strip()
-            client = TelegramClient(StringSession(session_string), api_id, api_hash)
-    else:
-        client = TelegramClient(StringSession(), api_id, api_hash)
-        await client.connect()
-        if not await client.is_user_authorized():
-            await client.start(phone=phone_number)
-            session_string = client.session.save()
-            with open(session_file, 'w') as f:
-                f.write(session_string)
 
-    await client.connect()
+    try:
+        if os.path.exists(session_file):
+            with open(session_file, 'r') as f:
+                session_string = f.read().strip()
+                client = TelegramClient(StringSession(session_string), api_id, api_hash)
+        else:
+            client = TelegramClient(StringSession(), api_id, api_hash)
+            await client.connect()
+            if not await client.is_user_authorized():
+                while True:
+                    try:
+                        await client.start(phone=phone_number)
+                        break
+                    except FloodWaitError as e:
+                        wait_time = e.seconds
+                        logging.warning(f"FloodWaitError: Waiting for {wait_time} seconds.")
+                        time.sleep(wait_time)  # Wait for the specified time
+
+        await client.connect()
+    except Exception as e:
+        logging.error(f"Error starting Telegram client: {str(e)}")
+        return None
 
 def start_client(phone_number):
     loop.run_until_complete(async_start_client(phone_number))
@@ -66,9 +80,8 @@ def index():
         groups = [(dialog.id, dialog.name) for dialog in dialogs if dialog.is_group]
 
         return render_template('index.html', groups=groups)
-
     except Exception as e:
-        print(f"Erro ao tentar listar os grupos: {str(e)}")
+        logging.error(f"Error fetching groups: {str(e)}")
         return render_template('index.html', groups=[])
 
 @app.route('/send_messages', methods=['POST'])
@@ -85,21 +98,27 @@ def send_messages():
 
     async def send_messages_task():
         global sending
-        for group_id in group_ids:
-            if not sending:
-                break
-            try:
+        try:
+            for group_id in group_ids:
+                if not sending:
+                    break
                 for _ in range(total_messages):
                     if not sending:
                         break
-                    await client.send_message(int(group_id), message)
-                    session['status']['sending'].append(f"✅ Mensagem enviada para o grupo {group_id}")
-                    await asyncio.sleep(delay)
-            except Exception as e:
-                session['status']['errors'].append(f"❌ Erro ao enviar mensagem para o grupo {group_id}: {str(e)}")
-
-        sending = False
-        stop_sending_event.set()
+                    try:
+                        await client.send_message(int(group_id), message)
+                        session['status']['sending'].append(f"✅ Message sent to group {group_id}")
+                        await asyncio.sleep(delay)
+                    except FloodWaitError as e:
+                        wait_time = e.seconds
+                        logging.warning(f"FloodWaitError while sending message: Waiting for {wait_time} seconds.")
+                        time.sleep(wait_time)  # Wait before continuing
+                        break  # Stop sending to this group and move to the next
+        except Exception as e:
+            session['status']['errors'].append(f"❌ Error sending message: {str(e)}")
+        finally:
+            sending = False
+            stop_sending_event.set()
 
     loop.run_until_complete(send_messages_task())
     return jsonify(session['status'])
@@ -115,7 +134,6 @@ def stop_sending():
     global sending
     sending = False
     stop_sending_event.set()
-    # Retornar status atualizado
     return jsonify(session.get('status', {'sending': [], 'errors': []}))
 
 if __name__ == '__main__':
