@@ -1,3 +1,4 @@
 quart
 telethon
 python-dotenv
+flask-socketio
