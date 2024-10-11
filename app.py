@@ -48,7 +48,7 @@ async def login():
         if not await async_start_client(phone_number):
             # Redirecionar para a página de verificação se necessário
             return redirect(url_for('verify_code'))
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('index'))
     return await render_template('login.html')
 
 @app.route('/verify_code', methods=['GET', 'POST'])
@@ -82,8 +82,6 @@ async def index():
     try:
         dialogs = await client.get_dialogs()
         groups = [(dialog.id, dialog.name) for dialog in dialogs if dialog.is_group]
-
-        print(f"Grupos: {groups}")  # Verifica o conteúdo de groups
 
         return await render_template('index.html', groups=groups)
 
