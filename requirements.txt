@@ -1,6 +1,2 @@
-Telethon
-aiohttp
-Flask  
 quart
-quart-socketio
-python-socketio
+telethon
