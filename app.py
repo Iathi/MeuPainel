@@ -68,7 +68,7 @@ async def verify_code():
                 session_string = client.session.save()
                 with open(session_file, 'w') as f:
                     f.write(session_string)
-                return redirect(url_for('index'))
+                return redirect(url_for('login'))
             except Exception as e:
                 return f"Erro ao verificar o código: {e}"
     return await render_template('verify_code.html')
