@@ -3,30 +3,26 @@ from telethon import TelegramClient
 from telethon.sessions import StringSession
 import os
 import asyncio
-import subprocess
 
 app = Quart(__name__)
 app.secret_key = 'seu_segredo_aqui'
 
-# Substitua pelo seu API ID e API Hash
-api_id = '24010179'  
-api_hash = '7ddc83d894b896975083f985effffe11'
+api_id = '24010179'  # Substitua pelo seu API ID
+api_hash = '7ddc83d894b896975083f985effffe11'  # Substitua pelo seu API Hash
 
 client = None
 sending = False  # Variável global para controlar o envio
 stop_sending_event = asyncio.Event()
 
-# Função para garantir que o diretório de sessões exista
 def ensure_sessions_dir():
     if not os.path.exists('sessions'):
         os.makedirs('sessions')
 
-# Função assíncrona para iniciar o cliente do Telegram
 async def async_start_client(phone_number):
     global client
     session_file = f'sessions/{phone_number}.session'
     ensure_sessions_dir()
-
+    
     if os.path.exists(session_file):
         with open(session_file, 'r') as f:
             session_string = f.read().strip()
@@ -40,22 +36,21 @@ async def async_start_client(phone_number):
         session_string = client.session.save()
         with open(session_file, 'w') as f:
             f.write(session_string)
-
+    
     await client.connect()
     return True  # Login bem-sucedido
 
-# Rota de login
 @app.route('/login', methods=['GET', 'POST'])
 async def login():
     if request.method == 'POST':
         phone_number = (await request.form)['phone_number']
         session['phone_number'] = phone_number
         if not await async_start_client(phone_number):
+            # Redirecionar para a página de verificação se necessário
             return redirect(url_for('verify_code'))
         return redirect(url_for('index'))
     return await render_template('login.html')
 
-# Rota de verificação do código
 @app.route('/verify_code', methods=['GET', 'POST'])
 async def verify_code():
     if request.method == 'POST':
@@ -64,16 +59,16 @@ async def verify_code():
         if client and client.session:
             try:
                 await client.sign_in(code=code)
+                # Após a verificação, salve a sessão
                 session_file = f'sessions/{phone_number}.session'
                 session_string = client.session.save()
                 with open(session_file, 'w') as f:
                     f.write(session_string)
-                return redirect(url_for('login'))
+                return redirect(url_for('index'))
             except Exception as e:
                 return f"Erro ao verificar o código: {e}"
     return await render_template('verify_code.html')
 
-# Rota principal
 @app.route('/')
 async def index():
     if 'phone_number' not in session:
@@ -87,13 +82,13 @@ async def index():
     try:
         dialogs = await client.get_dialogs()
         groups = [(dialog.id, dialog.name) for dialog in dialogs if dialog.is_group]
+
         return await render_template('index.html', groups=groups)
 
     except Exception as e:
         print(f"Erro ao tentar listar os grupos: {str(e)}")
         return await render_template('index.html', groups=[])
 
-# Rota para enviar mensagens
 @app.route('/send_messages', methods=['POST'])
 async def send_messages():
     global sending, stop_sending_event
@@ -112,6 +107,7 @@ async def send_messages():
             if not sending:
                 break
             try:
+                # Enviar uma única mensagem para cada grupo
                 await client.send_message(int(group_id), message)
                 session['status']['sending'].append(f"✅ Mensagem enviada para o grupo {group_id}")
                 await asyncio.sleep(delay)
@@ -124,14 +120,12 @@ async def send_messages():
     await send_messages_task()
     return jsonify(session['status'])
 
-# Rota para atualizações de status
 @app.route('/status_updates')
 async def status_updates():
     if 'status' in session:
         return jsonify(session['status'])
     return jsonify({'sending': [], 'errors': []})
 
-# Rota para parar o envio de mensagens
 @app.route('/stop_sending', methods=['POST'])
 async def stop_sending():
     global sending
@@ -139,20 +133,5 @@ async def stop_sending():
     stop_sending_event.set()
     return jsonify(session.get('status', {'sending': [], 'errors': []}))
 
-# Rota para terminal
-@app.route('/terminal', methods=['GET', 'POST'])
-async def terminal():
-    output = ""
-    if request.method == 'POST':
-        command = (await request.form)['command']
-        try:
-            # Executa o comando no terminal e captura a saída
-            output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
-            output = output.decode('utf-8')
-        except subprocess.CalledProcessError as e:
-            output = e.output.decode('utf-8')
-    return await render_template('terminal.html', output=output)
-
-# Executar o aplicativo
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
