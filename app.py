@@ -11,7 +11,7 @@ api_id = '24010179'  # Substitua pelo seu API ID
 api_hash = '7ddc83d894b896975083f985effffe11'  # Substitua pelo seu API Hash
 
 client = None
-sending = False  # Variável global para controlar o envio
+sending = False
 stop_sending_event = asyncio.Event()
 
 def ensure_sessions_dir():
@@ -32,16 +32,15 @@ async def async_start_client(phone_number):
         await client.connect()
         if not await client.is_user_authorized():
             await client.send_code_request(phone_number)
-            return False  # Necessário verificar o código
+            return False
         session_string = client.session.save()
         with open(session_file, 'w') as f:
             f.write(session_string)
-    
+
     await client.connect()
-    return True  # Login bem-sucedido
+    return True
 
 def login_required(f):
-    """Decorador para exigir login antes de acessar uma rota."""
     async def decorated_function(*args, **kwargs):
         if 'phone_number' not in session:
             return redirect(url_for('login'))
@@ -54,7 +53,6 @@ async def login():
         phone_number = (await request.form)['phone_number']
         session['phone_number'] = phone_number
         if not await async_start_client(phone_number):
-            # Redirecionar para a página de verificação se necessário
             return redirect(url_for('verify_code'))
         return redirect(url_for('index'))
     return await render_template('login.html')
@@ -67,7 +65,6 @@ async def verify_code():
         if client and client.session:
             try:
                 await client.sign_in(code=code)
-                # Após a verificação, salve a sessão
                 session_file = f'sessions/{phone_number}.session'
                 session_string = client.session.save()
                 with open(session_file, 'w') as f:
@@ -114,7 +111,6 @@ async def send_messages():
             if not sending:
                 break
             try:
-                # Enviar uma única mensagem para cada grupo
                 await client.send_message(int(group_id), message)
                 session['status']['sending'].append(f"✅ Mensagem enviada para o grupo {group_id}")
                 await asyncio.sleep(delay)
