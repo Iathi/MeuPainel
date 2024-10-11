@@ -64,15 +64,10 @@ async def verify_code():
                 session_string = client.session.save()
                 with open(session_file, 'w') as f:
                     f.write(session_string)
-                # Redirecionar para o dashboard após a verificação
-                return redirect(url_for('dashboard'))  # Mudança aqui
+                return redirect(url_for('index'))
             except Exception as e:
                 return f"Erro ao verificar o código: {e}"
     return await render_template('verify_code.html')
-
-@app.route('/templet/dashboard.html')
-async def dashboard():
-    return await render_template('dashboard.html')  # Certifique-se de ter esse template
 
 @app.route('/')
 async def index():
@@ -87,6 +82,8 @@ async def index():
     try:
         dialogs = await client.get_dialogs()
         groups = [(dialog.id, dialog.name) for dialog in dialogs if dialog.is_group]
+
+        print(f"Grupos: {groups}")  # Verifica o conteúdo de groups
 
         return await render_template('index.html', groups=groups)
 
