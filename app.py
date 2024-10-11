@@ -31,7 +31,6 @@ async def async_start_client(phone_number):
         client = TelegramClient(StringSession(), api_id, api_hash)
         await client.connect()
         if not await client.is_user_authorized():
-            await client.send_code_request(phone_number)
             return False  # Necessário verificar o código
         session_string = client.session.save()
         with open(session_file, 'w') as f:
@@ -46,9 +45,8 @@ async def login():
         phone_number = (await request.form)['phone_number']
         session['phone_number'] = phone_number
         if not await async_start_client(phone_number):
-            # Redirecionar para a página de verificação se necessário
-            return redirect(url_for('verify_code'))
-        return redirect(url_for('index'))
+            return redirect(url_for('verify_code'))  # Redireciona para verificar o código
+        return redirect(url_for('index'))  # Se já autorizado, vai para o index
     return await render_template('login.html')
 
 @app.route('/verify_code', methods=['GET', 'POST'])
@@ -77,7 +75,8 @@ async def index():
     phone_number = session.get('phone_number')
 
     if client is None or not client.is_connected():
-        await async_start_client(phone_number)
+        if not await async_start_client(phone_number):
+            return redirect(url_for('verify_code'))  # Redirecionar se a conexão falhar
 
     try:
         dialogs = await client.get_dialogs()
