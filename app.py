@@ -1,17 +1,16 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from quart import Quart, render_template, request, redirect, url_for, session, jsonify
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 import os
 import asyncio
 
-app = Flask(__name__)
+app = Quart(__name__)
 app.secret_key = 'seu_segredo_aqui'
 
 api_id = '24010179'  # Substitua pelo seu API ID
 api_hash = '7ddc83d894b896975083f985effffe11'  # Substitua pelo seu API Hash
 
 client = None
-loop = asyncio.new_event_loop()
 sending = False  # Variável global para controlar o envio
 stop_sending_event = asyncio.Event()
 
@@ -41,29 +40,25 @@ async def async_start_client(phone_number):
     await client.connect()
     return True  # Login bem-sucedido
 
-def start_client(phone_number):
-    return loop.run_until_complete(async_start_client(phone_number))
-
 @app.route('/login', methods=['GET', 'POST'])
-def login():
+async def login():
     if request.method == 'POST':
-        phone_number = request.form['phone_number']
+        phone_number = (await request.form)['phone_number']
         session['phone_number'] = phone_number
-        # Iniciar o cliente e verificar se é necessário código
-        if not start_client(phone_number):
+        if not await async_start_client(phone_number):
             # Redirecionar para a página de verificação se necessário
             return redirect(url_for('verify_code'))
         return redirect(url_for('index'))
-    return render_template('login.html')
+    return await render_template('login.html')
 
 @app.route('/verify_code', methods=['GET', 'POST'])
-def verify_code():
+async def verify_code():
     if request.method == 'POST':
-        code = request.form['code']
+        code = (await request.form)['code']
         phone_number = session.get('phone_number')
         if client and client.session:
             try:
-                loop.run_until_complete(client.sign_in(code=code))
+                await client.sign_in(code=code)
                 # Após a verificação, salve a sessão
                 session_file = f'sessions/{phone_number}.session'
                 session_string = client.session.save()
@@ -72,34 +67,35 @@ def verify_code():
                 return redirect(url_for('index'))
             except Exception as e:
                 return f"Erro ao verificar o código: {e}"
-    return render_template('verify_code.html')
+    return await render_template('verify_code.html')
 
 @app.route('/')
-def index():
+async def index():
     if 'phone_number' not in session:
         return redirect(url_for('login'))
 
     phone_number = session.get('phone_number')
 
     if client is None or not client.is_connected():
-        start_client(phone_number)
+        await async_start_client(phone_number)
 
     try:
-        dialogs = loop.run_until_complete(client.get_dialogs())
+        dialogs = await client.get_dialogs()
         groups = [(dialog.id, dialog.name) for dialog in dialogs if dialog.is_group]
 
-        return render_template('index.html', groups=groups)
+        return await render_template('index.html', groups=groups)
 
     except Exception as e:
         print(f"Erro ao tentar listar os grupos: {str(e)}")
-        return render_template('index.html', groups=[])
+        return await render_template('index.html', groups=[])
 
 @app.route('/send_messages', methods=['POST'])
-def send_messages():
+async def send_messages():
     global sending, stop_sending_event
-    group_ids = request.form.getlist('groups')
-    delay = float(request.form['delay'])
-    message = request.form['message']
+    form = await request.form
+    group_ids = form.getlist('groups')
+    delay = float(form['delay'])
+    message = form['message']
 
     session['status'] = {'sending': [], 'errors': []}
     sending = True
@@ -121,21 +117,21 @@ def send_messages():
         sending = False
         stop_sending_event.set()
 
-    loop.run_until_complete(send_messages_task())
+    await send_messages_task()
     return jsonify(session['status'])
 
 @app.route('/status_updates')
-def status_updates():
+async def status_updates():
     if 'status' in session:
         return jsonify(session['status'])
     return jsonify({'sending': [], 'errors': []})
 
 @app.route('/stop_sending', methods=['POST'])
-def stop_sending():
+async def stop_sending():
     global sending
     sending = False
     stop_sending_event.set()
     return jsonify(session.get('status', {'sending': [], 'errors': []}))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
