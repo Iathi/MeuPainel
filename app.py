@@ -10,8 +10,8 @@ import time
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'default_secret')
 
-api_id = os.environ.get('TELEGRAM_API_ID')  # Use environment variable
-api_hash = os.environ.get('TELEGRAM_API_HASH')  # Use environment variable
+api_id = os.environ.get('24010179')  # Use environment variable
+api_hash = os.environ.get('7ddc83d894b896975083f985effffe11')  # Use environment variable
 
 client = None
 loop = asyncio.new_event_loop()
