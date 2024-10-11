@@ -1,10 +1,13 @@
-from quart import Quart, render_template, request, redirect, url_for, session, jsonify
-from telethon import TelegramClient
-from telethon.sessions import StringSession
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask_socketio import SocketIO, emit
+import subprocess
 import os
 import asyncio
+from telethon import TelegramClient
+from telethon.sessions import StringSession
 
-app = Quart(__name__)
+app = Flask(__name__)
+socketio = SocketIO(app)
 app.secret_key = 'seu_segredo_aqui'
 
 api_id = '24010179'  # Substitua pelo seu API ID
@@ -40,6 +43,14 @@ async def async_start_client(phone_number):
     await client.connect()
     return True  # Login bem-sucedido
 
+def login_required(f):
+    """Decorador para exigir login antes de acessar uma rota."""
+    async def decorated_function(*args, **kwargs):
+        if 'phone_number' not in session:
+            return redirect(url_for('login'))
+        return await f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/login', methods=['GET', 'POST'])
 async def login():
     if request.method == 'POST':
@@ -69,11 +80,9 @@ async def verify_code():
                 return f"Erro ao verificar o código: {e}"
     return await render_template('verify_code.html')
 
-@app.route('/')
+@app.route('/')  # Protegida por login_required
+@login_required
 async def index():
-    if 'phone_number' not in session:
-        return redirect(url_for('login'))
-
     phone_number = session.get('phone_number')
 
     if client is None or not client.is_connected():
@@ -90,6 +99,7 @@ async def index():
         return await render_template('index.html', groups=[])
 
 @app.route('/send_messages', methods=['POST'])
+@login_required
 async def send_messages():
     global sending, stop_sending_event
     form = await request.form
@@ -121,17 +131,37 @@ async def send_messages():
     return jsonify(session['status'])
 
 @app.route('/status_updates')
+@login_required
 async def status_updates():
     if 'status' in session:
         return jsonify(session['status'])
     return jsonify({'sending': [], 'errors': []})
 
 @app.route('/stop_sending', methods=['POST'])
+@login_required
 async def stop_sending():
     global sending
     sending = False
     stop_sending_event.set()
     return jsonify(session.get('status', {'sending': [], 'errors': []}))
 
+@app.route('/terminal')  # Nova rota para terminal.html
+@login_required
+def terminal():
+    return render_template('terminal.html')
+
+@socketio.on('run_command')
+def handle_command(data):
+    command = data['command']
+    try:
+        # Executa o comando no terminal e captura a saída
+        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
+        output = output.decode('utf-8')
+    except subprocess.CalledProcessError as e:
+        output = e.output.decode('utf-8')
+
+    # Envia a saída do comando de volta ao cliente
+    emit('command_output', {'output': output})
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
