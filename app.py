@@ -5,7 +5,7 @@ import os
 import asyncio
 
 app = Quart(__name__)
-app.secret_key = 'seu_segredo_aqui'
+app.secret_key = 'seu_segredo_aqui'  # Alterar para um segredo forte
 
 api_id = '24010179'  # Substitua pelo seu API ID
 api_hash = '7ddc83d894b896975083f985effffe11'  # Substitua pelo seu API Hash
@@ -46,10 +46,9 @@ async def login():
         phone_number = (await request.form)['phone_number']
         session['phone_number'] = phone_number
         if not await async_start_client(phone_number):
-            # Redirecionar para a página de verificação se necessário
             return redirect(url_for('verify_code'))
-        return redirect(url_for('login.html'))
-    return await render_template('index.html')
+        return redirect(url_for('index'))
+    return await render_template('login.html')
 
 @app.route('/verify_code', methods=['GET', 'POST'])
 async def verify_code():
@@ -59,7 +58,6 @@ async def verify_code():
         if client and client.session:
             try:
                 await client.sign_in(code=code)
-                # Após a verificação, salve a sessão
                 session_file = f'sessions/{phone_number}.session'
                 session_string = client.session.save()
                 with open(session_file, 'w') as f:
@@ -107,7 +105,6 @@ async def send_messages():
             if not sending:
                 break
             try:
-                # Enviar uma única mensagem para cada grupo
                 await client.send_message(int(group_id), message)
                 session['status']['sending'].append(f"✅ Mensagem enviada para o grupo {group_id}")
                 await asyncio.sleep(delay)
