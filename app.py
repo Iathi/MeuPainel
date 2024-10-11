@@ -1,13 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-from flask_socketio import SocketIO, emit
-import subprocess
-import os
-import asyncio
+from quart import Quart, render_template, request, redirect, url_for, session, jsonify
 from telethon import TelegramClient
 from telethon.sessions import StringSession
+import os
+import asyncio
 
-app = Flask(__name__)
-socketio = SocketIO(app)
+app = Quart(__name__)
 app.secret_key = 'seu_segredo_aqui'
 
 api_id = '24010179'  # Substitua pelo seu API ID
@@ -80,7 +77,7 @@ async def verify_code():
                 return f"Erro ao verificar o código: {e}"
     return await render_template('verify_code.html')
 
-@app.route('/')  # Protegida por login_required
+@app.route('/')
 @login_required
 async def index():
     phone_number = session.get('phone_number')
@@ -147,21 +144,8 @@ async def stop_sending():
 
 @app.route('/terminal')  # Nova rota para terminal.html
 @login_required
-def terminal():
-    return render_template('terminal.html')
-
-@socketio.on('run_command')
-def handle_command(data):
-    command = data['command']
-    try:
-        # Executa o comando no terminal e captura a saída
-        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
-        output = output.decode('utf-8')
-    except subprocess.CalledProcessError as e:
-        output = e.output.decode('utf-8')
-
-    # Envia a saída do comando de volta ao cliente
-    emit('command_output', {'output': output})
+async def terminal():
+    return await render_template('terminal.html')
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
