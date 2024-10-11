@@ -1,3 +1,8 @@
-Flask
 Telethon
 aiohttp
+Flask
+Telethon
+python-dotenv  
+quart
+quart-socketio
+python-socketio
