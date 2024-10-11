@@ -2,13 +2,14 @@ import os
 import asyncio
 import subprocess
 from quart import Quart, render_template, request, redirect, url_for, session, jsonify
-from flask_socketio import SocketIO, emit
+from quart_socketio import SocketIO, emit
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
 app = Quart(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'seu_segredo_aqui')
 
+# Inicialize o SocketIO com a instância do Quart
 socketio = SocketIO(app)
 
 api_id = os.getenv('API_ID')  # Defina seu API ID nas variáveis de ambiente
@@ -133,7 +134,7 @@ async def stop_sending():
     return jsonify(session.get('status', {'sending': [], 'errors': []}))
 
 @socketio.on('run_command')
-def handle_command(data):
+async def handle_command(data):
     command = data['command']
     try:
         output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
