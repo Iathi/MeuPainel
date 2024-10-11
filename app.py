@@ -64,10 +64,15 @@ async def verify_code():
                 session_string = client.session.save()
                 with open(session_file, 'w') as f:
                     f.write(session_string)
-                return redirect(url_for('index'))
+                # Redirecionar para o dashboard após a verificação
+                return redirect(url_for('dashboard'))  # Mudança aqui
             except Exception as e:
                 return f"Erro ao verificar o código: {e}"
     return await render_template('verify_code.html')
+
+@app.route('/templet/dashboard.html')
+async def dashboard():
+    return await render_template('dashboard.html')  # Certifique-se de ter esse template
 
 @app.route('/')
 async def index():
