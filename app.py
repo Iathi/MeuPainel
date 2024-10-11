@@ -48,7 +48,7 @@ async def login():
         if not await async_start_client(phone_number):
             # Redirecionar para a página de verificação se necessário
             return redirect(url_for('verify_code'))
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard'))
     return await render_template('login.html')
 
 @app.route('/verify_code', methods=['GET', 'POST'])
