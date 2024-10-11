@@ -40,7 +40,7 @@ async def async_start_client(phone_number):
     await client.connect()
     return True  # Login bem-sucedido
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST'])
 async def login():
     if request.method == 'POST':
         phone_number = (await request.form)['phone_number']
@@ -48,7 +48,7 @@ async def login():
         if not await async_start_client(phone_number):
             # Redirecionar para a página de verificação se necessário
             return redirect(url_for('verify_code'))
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('index'))
     return await render_template('login.html')
 
 @app.route('/verify_code', methods=['GET', 'POST'])
@@ -64,13 +64,13 @@ async def verify_code():
                 session_string = client.session.save()
                 with open(session_file, 'w') as f:
                     f.write(session_string)
-                return redirect(url_for('dashboard'))
+                return redirect(url_for('index'))
             except Exception as e:
                 return f"Erro ao verificar o código: {e}"
     return await render_template('verify_code.html')
 
-@app.route('/dashboard')
-async def dashboard():
+@app.route('/')
+async def index():
     if 'phone_number' not in session:
         return redirect(url_for('login'))
 
