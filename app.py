@@ -12,6 +12,7 @@ app.secret_key = os.getenv('SECRET_KEY', 'seu_segredo_aqui')
 # Inicialize o SocketIO com a instância do Quart
 socketio = SocketIO(app)
 
+# Configure o API ID e o API Hash como variáveis de ambiente
 api_id = os.getenv('API_ID')  # Defina seu API ID nas variáveis de ambiente
 api_hash = os.getenv('API_HASH')  # Defina seu API Hash nas variáveis de ambiente
 
