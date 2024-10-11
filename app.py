@@ -1,18 +1,21 @@
-from quart import Quart, websocket, render_template
-import subprocess
 import os
 import asyncio
+import subprocess
+from quart import Quart, render_template, request, redirect, url_for, session, jsonify
+from flask_socketio import SocketIO, emit
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
 app = Quart(__name__)
-app.secret_key = 'seu_segredo_aqui'
+app.secret_key = os.getenv('SECRET_KEY', 'seu_segredo_aqui')
 
-api_id = '24010179'  # Substitua pelo seu API ID
-api_hash = '7ddc83d894b896975083f985effffe11'  # Substitua pelo seu API Hash
+socketio = SocketIO(app)
+
+api_id = os.getenv('API_ID')  # Defina seu API ID nas variáveis de ambiente
+api_hash = os.getenv('API_HASH')  # Defina seu API Hash nas variáveis de ambiente
 
 client = None
-sending = False  # Variável global para controlar o envio
+sending = False
 stop_sending_event = asyncio.Event()
 
 def ensure_sessions_dir():
@@ -33,7 +36,7 @@ async def async_start_client(phone_number):
         await client.connect()
         if not await client.is_user_authorized():
             await client.send_code_request(phone_number)
-            return False  # Necessário verificar o código
+            return False  # Código de verificação necessário
         session_string = client.session.save()
         with open(session_file, 'w') as f:
             f.write(session_string)
@@ -41,27 +44,10 @@ async def async_start_client(phone_number):
     await client.connect()
     return True  # Login bem-sucedido
 
-@app.route('/')
-async def index():
-    return await render_template('terminal.html')
-
-@app.websocket('/ws')
-async def ws():
-    while True:
-        command = await websocket.receive()
-        try:
-            output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
-            output = output.decode('utf-8')
-        except subprocess.CalledProcessError as e:
-            output = e.output.decode('utf-8')
-
-        await websocket.send(output)
-
 @app.route('/login', methods=['GET', 'POST'])
 async def login():
     if request.method == 'POST':
-        form = await request.form
-        phone_number = form['phone_number']
+        phone_number = (await request.form)['phone_number']
         session['phone_number'] = phone_number
         if not await async_start_client(phone_number):
             return redirect(url_for('verify_code'))
@@ -71,8 +57,7 @@ async def login():
 @app.route('/verify_code', methods=['GET', 'POST'])
 async def verify_code():
     if request.method == 'POST':
-        form = await request.form
-        code = form['code']
+        code = (await request.form)['code']
         phone_number = session.get('phone_number')
         if client and client.session:
             try:
@@ -86,5 +71,77 @@ async def verify_code():
                 return f"Erro ao verificar o código: {e}"
     return await render_template('verify_code.html')
 
+@app.route('/')
+async def index():
+    if 'phone_number' not in session:
+        return redirect(url_for('login'))
+
+    phone_number = session.get('phone_number')
+
+    if client is None or not client.is_connected():
+        await async_start_client(phone_number)
+
+    try:
+        dialogs = await client.get_dialogs()
+        groups = [(dialog.id, dialog.name) for dialog in dialogs if dialog.is_group]
+        return await render_template('index.html', groups=groups)
+    except Exception as e:
+        print(f"Erro ao tentar listar os grupos: {str(e)}")
+        return await render_template('index.html', groups=[])
+
+@app.route('/send_messages', methods=['POST'])
+async def send_messages():
+    global sending, stop_sending_event
+    form = await request.form
+    group_ids = form.getlist('groups')
+    delay = float(form['delay'])
+    message = form['message']
+
+    session['status'] = {'sending': [], 'errors': []}
+    sending = True
+    stop_sending_event.clear()
+
+    async def send_messages_task():
+        global sending
+        for group_id in group_ids:
+            if not sending:
+                break
+            try:
+                await client.send_message(int(group_id), message)
+                session['status']['sending'].append(f"✅ Mensagem enviada para o grupo {group_id}")
+                await asyncio.sleep(delay)
+            except Exception as e:
+                session['status']['errors'].append(f"❌ Erro ao enviar mensagem para o grupo {group_id}: {str(e)}")
+
+        sending = False
+        stop_sending_event.set()
+
+    await send_messages_task()
+    return jsonify(session['status'])
+
+@app.route('/status_updates')
+async def status_updates():
+    if 'status' in session:
+        return jsonify(session['status'])
+    return jsonify({'sending': [], 'errors': []})
+
+@app.route('/stop_sending', methods=['POST'])
+async def stop_sending():
+    global sending
+    sending = False
+    stop_sending_event.set()
+    return jsonify(session.get('status', {'sending': [], 'errors': []}))
+
+@socketio.on('run_command')
+def handle_command(data):
+    command = data['command']
+    try:
+        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
+        output = output.decode('utf-8')
+    except subprocess.CalledProcessError as e:
+        output = e.output.decode('utf-8')
+
+    emit('command_output', {'output': output})
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    socketio.run(app, host='0.0.0.0', port=int(os.getenv('PORT', 5000)), debug=True)
