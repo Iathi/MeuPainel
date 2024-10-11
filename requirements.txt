@@ -1,5 +1,4 @@
 quart
-flask-socketio
+quart-socketio
 telethon
 python-socketio
-eventlet
