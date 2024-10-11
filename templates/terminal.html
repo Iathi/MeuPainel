@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #2e2e2e;
+            color: #e8e8e8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        #terminal-output {
+            width: 80%;
+            height: 300px;
+            background-color: #1e1e1e;
+            border: 1px solid #3e3e3e;
+            padding: 10px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+        #command-input {
+            width: 80%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        #run-command {
+            padding: 10px 20px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #run-command:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Execute Commandos no Terminal</h1>
+
+    <div id="terminal-output"></div>
+
+    <input type="text" id="command-input" placeholder="Digite o comando aqui">
+    <button id="run-command">Executar Comando</button>
+
+    <script>
+        var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+
+        document.getElementById('run-command').addEventListener('click', function() {
+            var command = document.getElementById('command-input').value;
+            if (command) {
+                socket.emit('run_command', { command: command });
+                document.getElementById('command-input').value = ''; 
+            }
+        });
+
+        socket.on('command_output', function(data) {
+            var outputElement = document.getElementById('terminal-output');
+            outputElement.innerHTML += data.output + '\n'; 
+            outputElement.scrollTop = outputElement.scrollHeight; 
+        });
+    </script>
+
+</body>
+</html>
