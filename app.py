@@ -1,10 +1,13 @@
 from quart import Quart, render_template, request, redirect, url_for, session, jsonify
+from flask_socketio import SocketIO, emit
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 import os
 import asyncio
+import subprocess
 
 app = Quart(__name__)
+socketio = SocketIO(app)
 app.secret_key = 'seu_segredo_aqui'
 
 api_id = '24010179'  # Substitua pelo seu API ID
@@ -46,7 +49,6 @@ async def login():
         phone_number = (await request.form)['phone_number']
         session['phone_number'] = phone_number
         if not await async_start_client(phone_number):
-            # Redirecionar para a página de verificação se necessário
             return redirect(url_for('verify_code'))
         return redirect(url_for('index'))
     return await render_template('login.html')
@@ -59,7 +61,6 @@ async def verify_code():
         if client and client.session:
             try:
                 await client.sign_in(code=code)
-                # Após a verificação, salve a sessão
                 session_file = f'sessions/{phone_number}.session'
                 session_string = client.session.save()
                 with open(session_file, 'w') as f:
@@ -82,9 +83,7 @@ async def index():
     try:
         dialogs = await client.get_dialogs()
         groups = [(dialog.id, dialog.name) for dialog in dialogs if dialog.is_group]
-
         return await render_template('index.html', groups=groups)
-
     except Exception as e:
         print(f"Erro ao tentar listar os grupos: {str(e)}")
         return await render_template('index.html', groups=[])
@@ -107,7 +106,6 @@ async def send_messages():
             if not sending:
                 break
             try:
-                # Enviar uma única mensagem para cada grupo
                 await client.send_message(int(group_id), message)
                 session['status']['sending'].append(f"✅ Mensagem enviada para o grupo {group_id}")
                 await asyncio.sleep(delay)
@@ -133,5 +131,19 @@ async def stop_sending():
     stop_sending_event.set()
     return jsonify(session.get('status', {'sending': [], 'errors': []}))
 
+@app.route('/terminal')
+async def terminal():
+    return await render_template('terminal.html')
+
+@socketio.on('run_command')
+def handle_command(data):
+    command = data['command']
+    try:
+        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
+        output = output.decode('utf-8')
+    except subprocess.CalledProcessError as e:
+        output = e.output.decode('utf-8')
+    emit('command_output', {'output': output})
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
