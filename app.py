@@ -46,7 +46,6 @@ async def login():
         phone_number = (await request.form)['phone_number']
         session['phone_number'] = phone_number
         if not await async_start_client(phone_number):
-            # Redirecionar para a página de verificação se necessário
             return redirect(url_for('verify_code'))
         return redirect(url_for('index'))
     return await render_template('login.html')
@@ -58,8 +57,7 @@ async def verify_code():
         phone_number = session.get('phone_number')
         if client and client.session:
             try:
-                await client.sign_in(code=code)
-                # Após a verificação, salve a sessão
+                await client.sign_in(phone=phone_number, code=code)
                 session_file = f'sessions/{phone_number}.session'
                 session_string = client.session.save()
                 with open(session_file, 'w') as f:
@@ -73,20 +71,17 @@ async def verify_code():
 async def index():
     if 'phone_number' not in session:
         return redirect(url_for('login'))
-
+    
     phone_number = session.get('phone_number')
-
     if client is None or not client.is_connected():
         await async_start_client(phone_number)
-
+    
     try:
         dialogs = await client.get_dialogs()
         groups = [(dialog.id, dialog.name) for dialog in dialogs if dialog.is_group]
-
         return await render_template('index.html', groups=groups)
-
     except Exception as e:
-        print(f"Erro ao tentar listar os grupos: {str(e)}")
+        print(f"Erro ao listar os grupos: {e}")
         return await render_template('index.html', groups=[])
 
 @app.route('/send_messages', methods=['POST'])
@@ -96,35 +91,31 @@ async def send_messages():
     group_ids = form.getlist('groups')
     delay = float(form['delay'])
     message = form['message']
-
+    
     session['status'] = {'sending': [], 'errors': []}
     sending = True
     stop_sending_event.clear()
-
+    
     async def send_messages_task():
         global sending
         for group_id in group_ids:
-            if not sending:
+            if stop_sending_event.is_set():
                 break
             try:
-                # Enviar uma única mensagem para cada grupo
                 await client.send_message(int(group_id), message)
-                session['status']['sending'].append(f"✅ Mensagem enviada para o grupo {group_id}")
+                session['status']['sending'].append(f"✅ Mensagem enviada para {group_id}")
                 await asyncio.sleep(delay)
             except Exception as e:
-                session['status']['errors'].append(f"❌ Erro ao enviar mensagem para o grupo {group_id}: {str(e)}")
-
+                session['status']['errors'].append(f"❌ Erro ao enviar mensagem para {group_id}: {e}")
         sending = False
         stop_sending_event.set()
-
-    await send_messages_task()
+    
+    asyncio.create_task(send_messages_task())
     return jsonify(session['status'])
 
 @app.route('/status_updates')
 async def status_updates():
-    if 'status' in session:
-        return jsonify(session['status'])
-    return jsonify({'sending': [], 'errors': []})
+    return jsonify(session.get('status', {'sending': [], 'errors': []}))
 
 @app.route('/stop_sending', methods=['POST'])
 async def stop_sending():
@@ -134,4 +125,5 @@ async def stop_sending():
     return jsonify(session.get('status', {'sending': [], 'errors': []}))
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=4000)
+    port = int(os.environ.get('PORT', 4000))  # Usa a porta da Render ou 4000 como padrão
+    app.run(debug=True, host='0.0.0.0', port=port)
